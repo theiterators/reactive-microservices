@@ -71,7 +71,7 @@ object AuthFb extends App {
     }
   }
 
-  private def requestIdentity(): Future[Identity] = {
+  private def requestNewIdentity(): Future[Identity] = {
     val connection = Http().outgoingConnection("localhost", 8000)
     val responseFuture = Source.single(RequestBuilding.Post("/identities")).via(connection.flow).runWith(Sink.head)
     responseFuture.flatMap { response =>
@@ -111,7 +111,7 @@ object AuthFb extends App {
       } else {
         val identityEitherFuture: Future[Either[String, Identity]] = tokenValueOption match {
           case Some(tokenValue) => requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
-          case None => requestIdentity().map(Right(_))
+          case None => requestNewIdentity().map(Right(_))
         }
 
         identityEitherFuture.flatMap {
@@ -166,8 +166,7 @@ object AuthFb extends App {
               case Some(token) => Right(token)
               case None => Left("Token expired or not found")
             }
-          case None =>
-            requestLogin(identityId).map(Right(_))
+          case None => requestLogin(identityId).map(Right(_))
         }
       case None => Future.successful(Left(s"User with id ${user.getId} is not registered"))
     }
