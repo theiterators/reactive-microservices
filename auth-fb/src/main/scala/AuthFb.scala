@@ -20,35 +20,23 @@ import spray.json.DefaultJsonProtocol
 
 case class AuthResponse(accessToken: String, expiresIn: Long, signedRequest: String, userID: String)
 
-object AuthResponse extends DefaultJsonProtocol {
-  implicit val jsonFormat = jsonFormat4(AuthResponse.apply)
-}
-
 case class Identity(id: Long)
-
-object Identity extends DefaultJsonProtocol {
-  implicit val identityFormat = jsonFormat1(Identity.apply)
-}
 
 case class LoginRequest(identityId: Long, authMethod: String = "fb")
 
-object LoginRequest extends DefaultJsonProtocol {
-  implicit val loginRequestFormat = jsonFormat2(LoginRequest.apply)
-}
-
 case class ReloginRequest(tokenValue: String, authMethod: String = "fb")
-
-object ReloginRequest extends DefaultJsonProtocol {
-  implicit val reloginRequestFormat = jsonFormat2(ReloginRequest.apply)
-}
 
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object Token extends DefaultJsonProtocol {
-  implicit val tokenFormat = jsonFormat4(Token.apply)
+trait AuthFbJsonProtocols extends DefaultJsonProtocol {
+  protected implicit val jsonFormat = jsonFormat4(AuthResponse.apply)
+  protected implicit val identityFormat = jsonFormat1(Identity.apply)
+  protected implicit val loginRequestFormat = jsonFormat2(LoginRequest.apply)
+  protected implicit val reloginRequestFormat = jsonFormat2(ReloginRequest.apply)
+  protected implicit val tokenFormat = jsonFormat4(Token.apply)
 }
 
-object AuthFb extends App {
+object AuthFb extends App with AuthFbJsonProtocols {
   private val config = ConfigFactory.load()
   private val interface = config.getString("http.interface")
   private val port = config.getInt("http.port")
