@@ -15,7 +15,7 @@ import com.restfb.types.User
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
 import redis.RedisClient
-import scala.concurrent.Future
+import scala.concurrent.{blocking, Future}
 import scala.util.{Failure, Success, Try}
 import spray.json.DefaultJsonProtocol
 
@@ -128,8 +128,10 @@ object AuthFb extends App with AuthFbJsonProtocols {
 
   private def getFbUserDetails(accessToken: String): Try[User] = {
     Try {
-      val client = new DefaultFacebookClient(accessToken, fbAppSecret)
-      client.fetchObject("me", classOf[User])
+      blocking {
+        val client = new DefaultFacebookClient(accessToken, fbAppSecret)
+        client.fetchObject("me", classOf[User])
+      }
     }
   }
 

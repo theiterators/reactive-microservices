@@ -5,6 +5,7 @@ import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.stream.FlowMaterializer
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.blocking
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.lifted.{ProvenShape, Tag}
 import spray.json.DefaultJsonProtocol
@@ -38,12 +39,20 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
   private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   private val identities = TableQuery[Identities]
 
-  private def getAllIdentities(): List[Identity] = db.withSession { implicit s =>
-    identities.list
+  private def getAllIdentities(): List[Identity] = {
+    blocking {
+      db.withSession { implicit s =>
+        identities.list
+      }
+    }
   }
 
-  private def saveIdentity(identity: Identity): Identity = db.withSession { implicit s =>
-    identities returning identities.map(_.id) into ((_, id) => identity.copy(id = Option(id))) += identity
+  private def saveIdentity(identity: Identity): Identity = {
+    blocking {
+      db.withSession { implicit s =>
+        identities returning identities.map(_.id) into ((_, id) => identity.copy(id = Option(id))) += identity
+      }
+    }
   }
 
   Http().bind(interface = interface, port = port).startHandlingWith {
