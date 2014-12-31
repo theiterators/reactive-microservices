@@ -11,10 +11,6 @@ import spray.json.DefaultJsonProtocol
 
 case class Identity(id: Option[Long], createdAt: Long)
 
-object Identity extends DefaultJsonProtocol {
-  implicit val identityFormat = jsonFormat2(Identity.apply)
-}
-
 class Identities(tag: Tag) extends Table[Identity](tag, "identity") {
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
@@ -23,7 +19,11 @@ class Identities(tag: Tag) extends Table[Identity](tag, "identity") {
   override def * : ProvenShape[Identity] = (id.?, createdAt) <>((Identity.apply _).tupled, Identity.unapply)
 }
 
-object IdentityManager extends App {
+trait IdentityManagerJsonProtocols extends DefaultJsonProtocol {
+  protected implicit val identityFormat = jsonFormat2(Identity.apply)
+}
+
+object IdentityManager extends App with IdentityManagerJsonProtocols {
   private val config = ConfigFactory.load()
   private val interface = config.getString("http.interface")
   private val port = config.getInt("http.port")
