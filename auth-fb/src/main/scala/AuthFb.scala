@@ -3,6 +3,7 @@ import akka.http.Http
 import akka.http.client.RequestBuilding
 import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.marshalling.ToResponseMarshallable
+import akka.http.model.{HttpResponse, HttpRequest}
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.http.unmarshalling.Unmarshal
@@ -45,6 +46,10 @@ object AuthFb extends App with AuthFbJsonProtocols {
   private val redisPassword = config.getString("redis.password")
   private val redisDb = config.getInt("redis.db")
   private val fbAppSecret = config.getString("fb.appSecret")
+  private val identityManagerHost = config.getString("services.identity-manager.host")
+  private val identityManagerPort = config.getInt("services.identity-manager.port")
+  private val tokenManagerHost = config.getString("services.token-manager.host")
+  private val tokenManagerPort = config.getInt("services.token-manager.port")
 
   private implicit val actorSystem = ActorSystem()
   private implicit val materializer = FlowMaterializer()
@@ -52,17 +57,19 @@ object AuthFb extends App with AuthFbJsonProtocols {
 
   private val redis = RedisClient(host = redisHost, port = redisPort, password = Option(redisPassword), db = Option(redisDb))
 
-  private def getFbUserDetails(accessToken: String): Try[User] = {
-    Try {
-      val client = new DefaultFacebookClient(accessToken, fbAppSecret)
-      client.fetchObject("me", classOf[User])
-    }
+  private val identityManagerConnection = Http().outgoingConnection(identityManagerHost, identityManagerPort)
+  private val tokenManagerConnection = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
+
+  private def requestIdentityManager(request: HttpRequest): Future[HttpResponse] = {
+    Source.single(request).via(identityManagerConnection.flow).runWith(Sink.head)
+  }
+
+  private def requestTokenManager(request: HttpRequest): Future[HttpResponse] = {
+    Source.single(request).via(tokenManagerConnection.flow).runWith(Sink.head)
   }
 
   private def requestNewIdentity(): Future[Identity] = {
-    val connection = Http().outgoingConnection("localhost", 8000)
-    val responseFuture = Source.single(RequestBuilding.Post("/identities")).via(connection.flow).runWith(Sink.head)
-    responseFuture.flatMap { response =>
+    requestIdentityManager(RequestBuilding.Post("/identities")).flatMap { response =>
       if (response.status.isSuccess()) {
         Unmarshal(response.entity).to[Identity]
       } else {
@@ -74,9 +81,7 @@ object AuthFb extends App with AuthFbJsonProtocols {
   }
 
   private def requestToken(tokenValue: String): Future[Either[String, Token]] = {
-    val connection = Http().outgoingConnection("localhost", 8010)
-    val responseFuture = Source.single(RequestBuilding.Get(s"/tokens/$tokenValue")).via(connection.flow).runWith(Sink.head)
-    responseFuture.flatMap { response =>
+    requestTokenManager(RequestBuilding.Get(s"/tokens/$tokenValue")).flatMap { response =>
       if (response.status.isSuccess()) {
         Unmarshal(response.entity).to[Token].map(Right(_))
       } else if (response.status == NotFound) {
@@ -89,7 +94,44 @@ object AuthFb extends App with AuthFbJsonProtocols {
     }
   }
 
+  private def requestLogin(identityId: Long): Future[Token] = {
+    val loginRequest = LoginRequest(identityId)
+    requestTokenManager(RequestBuilding.Post("/tokens", loginRequest)).flatMap { response =>
+      if (response.status.isSuccess()) {
+        Unmarshal(response.entity).to[Token]
+      } else {
+        Unmarshal(response.entity).to[String].flatMap { errorMessage =>
+          Future.failed(new IOException(s"Login request failed with status ${response.status} and error $errorMessage"))
+        }
+      }
+    }
+  }
+
+  private def requestRelogin(tokenValue: String): Future[Option[Token]] = {
+    val reloginRequest = ReloginRequest(tokenValue)
+    requestTokenManager(RequestBuilding.Patch("/tokens", reloginRequest)).flatMap { response =>
+      if (response.status.isSuccess()) {
+        Unmarshal(response.entity).to[Token].map(Option(_))
+      } else if (response.status == NotFound) {
+        Future.successful(None)
+      } else {
+        Unmarshal(response.entity).to[String].flatMap { errorMessage =>
+          Future.failed(new IOException(s"Relogin request failed with status ${response.status} and error $errorMessage"))
+        }
+      }
+    }
+  }
+
   private def userToRedisKey(user: User): String = s"auth-fb:id:${user.getId}"
+
+  private def getIdentityIdForUser(user: User): Future[Option[Long]] = redis.get(userToRedisKey(user)).map(_.map(_.utf8String.toLong))
+
+  private def getFbUserDetails(accessToken: String): Try[User] = {
+    Try {
+      val client = new DefaultFacebookClient(accessToken, fbAppSecret)
+      client.fetchObject("me", classOf[User])
+    }
+  }
 
   private def register(user: User, tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
     val key = userToRedisKey(user)
@@ -111,42 +153,8 @@ object AuthFb extends App with AuthFbJsonProtocols {
     }
   }
 
-  private def getIdentityIdFromUser(user: User): Future[Option[Long]] = redis.get(userToRedisKey(user)).map(_.map(_.utf8String.toLong))
-
-  private def requestLogin(identityId: Long): Future[Token] = {
-    val connection = Http().outgoingConnection("localhost", 8010)
-    val loginRequest = LoginRequest(identityId)
-    val responseFuture = Source.single(RequestBuilding.Post("/tokens", loginRequest)).via(connection.flow).runWith(Sink.head)
-    responseFuture.flatMap { response =>
-     if (response.status.isSuccess()) {
-       Unmarshal(response.entity).to[Token]
-     } else {
-       Unmarshal(response.entity).to[String].flatMap { errorMessage =>
-         Future.failed(new IOException(s"Login request failed with status ${response.status} and error $errorMessage"))
-       }
-     }
-    }
-  }
-
-  private def requestRelogin(tokenValue: String): Future[Option[Token]] = {
-    val connection = Http().outgoingConnection("localhost", 8010)
-    val reloginRequest = ReloginRequest(tokenValue)
-    val responseFuture = Source.single(RequestBuilding.Patch("/tokens", reloginRequest)).via(connection.flow).runWith(Sink.head)
-    responseFuture.flatMap { response =>
-      if (response.status.isSuccess()) {
-        Unmarshal(response.entity).to[Token].map(Option(_))
-      } else if (response.status == NotFound) {
-        Future.successful(None)
-      } else {
-        Unmarshal(response.entity).to[String].flatMap { errorMessage =>
-          Future.failed(new IOException(s"Relogin request failed with status ${response.status} and error $errorMessage"))
-        }
-      }
-    }
-  }
-
   private def login(user: User, tokenValueOption: Option[String]): Future[Either[String, Token]] = {
-    getIdentityIdFromUser(user).flatMap {
+    getIdentityIdForUser(user).flatMap {
       case Some(identityId) =>
         tokenValueOption match {
           case Some(tokenValue) =>
