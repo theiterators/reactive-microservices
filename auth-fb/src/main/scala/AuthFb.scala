@@ -30,7 +30,7 @@ case class ReloginRequest(tokenValue: String, authMethod: String = "fb")
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
 trait AuthFbJsonProtocols extends DefaultJsonProtocol {
-  protected implicit val jsonFormat = jsonFormat4(AuthResponse.apply)
+  protected implicit val authResponseFormat = jsonFormat4(AuthResponse.apply)
   protected implicit val identityFormat = jsonFormat1(Identity.apply)
   protected implicit val loginRequestFormat = jsonFormat2(LoginRequest.apply)
   protected implicit val reloginRequestFormat = jsonFormat2(ReloginRequest.apply)
