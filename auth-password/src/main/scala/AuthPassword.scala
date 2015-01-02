@@ -32,7 +32,7 @@ object AuthPassword extends App with AuthPasswordJsonProtocols with AuthPassword
             entity(as[PasswordRegisterRequest]) { request =>
               optionalHeaderValueByName("Auth-Token") { tokenValue =>
                 complete {
-                  service.register(request, tokenValue).map {
+                  service.register(request, tokenValue) match {
                     case Right(identity) => ToResponseMarshallable(Created -> identity)
                     case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
                   }

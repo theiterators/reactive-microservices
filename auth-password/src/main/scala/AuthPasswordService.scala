@@ -1,35 +1,24 @@
 import org.mindrot.jbcrypt.BCrypt
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.blocking
+import scala.concurrent.{Await, Future, blocking}
+import scala.concurrent.duration._
 
 class AuthPasswordService(gateway: Gateway) {
 
-  def register(request: PasswordRegisterRequest, tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
-    blocking {
-      if (Repository.exists(request.email)) {
-        Future.successful(Left(s"User with email ${request.email.address} is already registered"))
-      } else {
-        val identityEitherFuture: Future[Either[String, Identity]] = tokenValueOption match {
-          case Some(tokenValue) => gateway.requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
-          case None => gateway.requestNewIdentity().map(Right(_))
-        }
+  def register(request: PasswordRegisterRequest, tokenValueOption: Option[String]): Either[String, Identity] = {
 
-        identityEitherFuture.flatMap {
-          case Right(identity) => {
-            val passHash = hashPassword(request.password)
-            val entry = AuthEntry(None, identity.id, System.currentTimeMillis, request.email, passHash)
-            Repository.save(entry)
-            Future.successful(Right(identity))
-          }
-          case l => Future.successful(l)
-        }
+    if (blocking { Repository.exists(request.email) }) {
+      Left(s"User with email ${request.email.address} is already registered")
+    } else {
+      val identityEitherFuture: Future[Either[String, Identity]] = acquireIdentity(tokenValueOption)
+
+      Await.result(identityEitherFuture, 5000 millis) match {
+        case Right(identity) => Right(createEntry(request, identity))
+        case l => l
       }
     }
   }
-
-  def reset(request: PasswordResetRequest) = ???
 
   def login(request: PasswordLoginRequest, tokenValueOption: Option[String]): Future[Either[String, Token]] = {
     Repository.get(request.email) match {
@@ -49,6 +38,22 @@ class AuthPasswordService(gateway: Gateway) {
           }
         }
       }
+    }
+  }
+
+  def reset(request: PasswordResetRequest) = ???
+
+  private def createEntry(request: PasswordRegisterRequest, identity: Identity): Identity = {
+    val passHash = hashPassword(request.password)
+    val entry = AuthEntry(None, identity.id, System.currentTimeMillis, request.email, passHash)
+    blocking { Repository.save(entry) }
+    identity
+  }
+
+  private def acquireIdentity(tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
+    tokenValueOption match {
+      case Some(tokenValue) => gateway.requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
+      case None => gateway.requestNewIdentity().map(Right(_))
     }
   }
 
