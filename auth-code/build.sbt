@@ -1,4 +1,4 @@
-name := "otac"
+name := "auth-code"
 
 version := "1.0"
 
