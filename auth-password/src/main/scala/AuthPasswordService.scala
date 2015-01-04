@@ -1,19 +1,14 @@
 import org.mindrot.jbcrypt.BCrypt
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future, blocking}
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future, blocking}
 
-class AuthPasswordService(gateway: Gateway) {
+class AuthPasswordService(gateway: Gateway)(implicit ec: ExecutionContext) {
 
-  def register(request: PasswordRegisterRequest, tokenValueOption: Option[String]): Either[String, Identity] = {
-
-    if (blocking { Repository.exists(request.email) }) {
-      Left(s"User with email ${request.email.address} is already registered")
+  def register(request: PasswordRegisterRequest, tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
+    if (blocking(Repository.exists(request.email))) {
+      Future.successful(Left(s"Wrong login data"))
     } else {
-      val identityEitherFuture: Future[Either[String, Identity]] = acquireIdentity(tokenValueOption)
-
-      Await.result(identityEitherFuture, 5000 millis) match {
+        acquireIdentity(tokenValueOption).map {
         case Right(identity) => Right(createEntry(request, identity))
         case l => l
       }
@@ -21,11 +16,11 @@ class AuthPasswordService(gateway: Gateway) {
   }
 
   def login(request: PasswordLoginRequest, tokenValueOption: Option[String]): Future[Either[String, Token]] = {
-    Repository.get(request.email) match {
-      case None => Future.successful(Left(s"User with email ${request.email.address} is not registered"))
+    blocking(Repository.get(request.email)) match {
+      case None => Future.successful(Left(s"Wrong login data"))
       case Some(entry) => {
         if (!checkPassword(request.password, entry.password)) {
-          Future.successful(Left(s"Wrong password for email ${request.email.address}"))
+          Future.successful(Left(s"Wrong login data"))
         } else {
           tokenValueOption match {
             case None => gateway.requestLogin(entry.identityId).map(Right(_))
@@ -46,7 +41,7 @@ class AuthPasswordService(gateway: Gateway) {
   private def createEntry(request: PasswordRegisterRequest, identity: Identity): Identity = {
     val passHash = hashPassword(request.password)
     val entry = AuthEntry(None, identity.id, System.currentTimeMillis, request.email, passHash)
-    blocking { Repository.save(entry) }
+    blocking(Repository.save(entry))
     identity
   }
 

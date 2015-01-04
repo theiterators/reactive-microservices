@@ -27,47 +27,32 @@ object AuthPassword extends App with AuthPasswordJsonProtocols with AuthPassword
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-password") {
       path("register" / "password") {
-        pathEndOrSingleSlash {
-          post {
-            entity(as[PasswordRegisterRequest]) { request =>
-              optionalHeaderValueByName("Auth-Token") { tokenValue =>
-                complete {
-                  service.register(request, tokenValue) match {
-                    case Right(identity) => ToResponseMarshallable(Created -> identity)
-                    case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
-                  }
-                }
-              }
+        (pathEndOrSingleSlash & post & entity(as[PasswordRegisterRequest]) & optionalHeaderValueByName("Auth-Token")) {
+          (request, tokenValue) =>
+          complete {
+            service.register(request, tokenValue).map {
+              case Right(identity) => ToResponseMarshallable(Created -> identity)
+              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
             }
           }
         }
       } ~
       path("login" / "password") {
-        pathEndOrSingleSlash {
-          post {
-            entity(as[PasswordLoginRequest]) { request =>
-              optionalHeaderValueByName("Auth-Token") { tokenValue =>
-                complete {
-                  service.login(request, tokenValue).map {
-                    case Right(token) => ToResponseMarshallable(Created -> token)
-                    case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
-                  }
-                }
-              }
+        (pathEndOrSingleSlash & post & entity(as[PasswordLoginRequest]) & optionalHeaderValueByName("Auth-Token")) {
+        (request, tokenValue) =>
+          complete {
+            service.login(request, tokenValue).map {
+              case Right(token) => ToResponseMarshallable(Created -> token)
+              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
             }
           }
         }
       } ~
       path("reset" / "password") {
-        pathEndOrSingleSlash {
-          post {
-            entity(as[PasswordResetRequest]) { request =>
-              headerValueByName("Auth-Token") { tokenValue =>
-                complete {
-                  OK
-                }
-              }
-            }
+        (pathEndOrSingleSlash & post & entity(as[PasswordResetRequest]) & headerValueByName("Auth-Token")) {
+          (request, tokenValue) =>
+          complete {
+            OK
           }
         }
       }

@@ -11,7 +11,7 @@ case class EmailAddress(address: String) extends MappedTo[String] {
 object EmailAddress {
   def isValid(email: String): Boolean = EmailRegex.pattern.matcher(email.toUpperCase).matches()
 
-  private val EmailRegex = """\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b""".r // NOTE: only uppercase matching
+  private val EmailRegex = """\b[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\b""".r
 }
 
 case class AuthEntry(id: Option[Long], identityId: Long, createdAt: Long, email: EmailAddress, password: String)
@@ -27,8 +27,7 @@ class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
 
   def password = column[String]("password", O.NotNull)
 
-  override def * : ProvenShape[AuthEntry] =
-    (id.?, identityId, createdAt, email, password) <> ((AuthEntry.apply _).tupled, AuthEntry.unapply)
+  override def * : ProvenShape[AuthEntry] = (id.?, identityId, createdAt, email, password) <> (AuthEntry.tupled, AuthEntry.unapply)
 }
 
 object Repository extends AuthPasswordConfig {
@@ -44,10 +43,7 @@ object Repository extends AuthPasswordConfig {
 
   def exists(email: EmailAddress): Boolean = {
     db.withSession { implicit session =>
-      byEmailCompiled(email).firstOption match {
-        case Some(_) => true
-        case None => false
-      }
+      byEmailCompiled(email).firstOption.isDefined
     }
   }
 
