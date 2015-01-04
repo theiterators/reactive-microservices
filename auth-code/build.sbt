@@ -24,3 +24,4 @@ libraryDependencies ++= {
 }
 
 Revolver.settings
+Revolver.enableDebugging(port = 5005, suspend = false)
