@@ -8,7 +8,9 @@ CREATE TABLE "auth_entry"(
 CREATE TABLE "code"(
   user_identifier VARCHAR(10),
   card_index BIGINT NOT NULL,
+  code_index BIGINT NOT NULL,
   code VARCHAR(6) NOT NULL,
   created_at BIGINT NOT NULL,
-  activated_at BIGINT
+  activated_at BIGINT,
+  used_at BIGINT
 )
