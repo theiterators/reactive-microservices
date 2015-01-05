@@ -8,7 +8,7 @@ import akka.stream.FlowMaterializer
 
 case class PasswordRegisterRequest(email: EmailAddress, password: String)
 case class PasswordLoginRequest(email: EmailAddress, password: String)
-case class PasswordResetRequest(email: EmailAddress, password: String, newPassword: String)
+case class PasswordResetRequest(email: EmailAddress, newPassword: String)
 
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
@@ -52,7 +52,10 @@ object AuthPassword extends App with AuthPasswordJsonProtocols with AuthPassword
         (pathEndOrSingleSlash & post & entity(as[PasswordResetRequest]) & headerValueByName("Auth-Token")) {
           (request, tokenValue) =>
           complete {
-            OK
+            service.reset(request, tokenValue).map {
+              case Right(identity) => ToResponseMarshallable(OK -> identity)
+              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            }
           }
         }
       }

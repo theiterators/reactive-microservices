@@ -1,6 +1,7 @@
 import org.mindrot.jbcrypt.BCrypt
 
 import scala.concurrent.{ExecutionContext, Future, blocking}
+import scala.util.Success
 
 class AuthPasswordService(gateway: Gateway)(implicit ec: ExecutionContext) {
 
@@ -36,7 +37,24 @@ class AuthPasswordService(gateway: Gateway)(implicit ec: ExecutionContext) {
     }
   }
 
-  def reset(request: PasswordResetRequest) = ???
+  def reset(request: PasswordResetRequest, tokenValue: String): Future[Either[String, Identity]] = {
+    blocking(Repository.get(request.email)) match {
+      case None => Future.successful(Left(s"Wrong login data"))
+      case Some(entry) => {
+        gateway.requestToken(tokenValue).flatMap {
+          case Right(token) => {
+            if (entry.identityId != token.identityId) { Future.successful(Left(s"Wrong login data")) }
+            else {
+              val passHash = hashPassword(request.newPassword)
+              blocking(Repository.update(entry.copy(password = passHash)))
+              Future.successful(Right(Identity(entry.identityId)))
+            }
+          }
+          case Left(s) => Future.successful(Left(s))
+        }
+      }
+    }
+  }
 
   private def createEntry(request: PasswordRegisterRequest, identity: Identity): Identity = {
     val passHash = hashPassword(request.password)

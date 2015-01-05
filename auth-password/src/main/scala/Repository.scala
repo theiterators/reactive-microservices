@@ -53,6 +53,12 @@ object Repository extends AuthPasswordConfig {
     }
   }
 
+  def update(entry: AuthEntry) = {
+    db.withSession { implicit session =>
+      authEntries.filter(_.id === entry.id.get).update(entry)
+    }
+  }
+
   def get(email: EmailAddress): Option[AuthEntry] = {
     db.withSession { implicit session =>
       byEmailCompiled(email).firstOption
