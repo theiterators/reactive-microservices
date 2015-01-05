@@ -48,7 +48,7 @@ class Codes(tag: Tag) extends Table[Code](tag, "code") {
   override def * : ProvenShape[Code] = (userIdentifier, cardIndex, codeIndex, code, createdAt, activatedAt,usedAt) <>((Code.apply _).tupled, Code.unapply)
 }
 
-object AuthCode extends App with DefaultJsonProtocol {
+object AuthCode extends App with AuthCodeJsonProtocol {
   val config = ConfigFactory.load()
   val interface = config.getString("http.interface")
   val port = config.getInt("http.port")
@@ -59,27 +59,12 @@ object AuthCode extends App with DefaultJsonProtocol {
   val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   val authEntriesQuery = TableQuery[AuthEntries]
   val codesQuery = TableQuery[Codes]
-  implicit val internalLoginRequestFormat = jsonFormat2(InternalLoginRequest)
-  implicit val internalReloginRequestFormat = jsonFormat2(InternalReloginRequest)
-  implicit val identityFormat = jsonFormat1(Identity)
-  implicit val tokenFormat = jsonFormat4(Token)
-  implicit val codeCardFormat = jsonFormat2(CodeCard)
-  implicit val authEntryFormat = jsonFormat4(AuthEntry)
-  implicit val registerResponseFormat = jsonFormat3(RegisterResponse)
-  implicit val loginRequestFormat = jsonFormat4(LoginRequest)
-  implicit val activateCodeRequestFormat = jsonFormat1(ActivateCodeRequest)
-  implicit val activateCodeResponseFormat = jsonFormat2(ActivateCodeResponse)
-  implicit val getCodeCardRequestFormat = jsonFormat1(GetCodeCardRequest)
-  implicit val getCodeCardResponseFormat = jsonFormat2(GetCodeCardResponse)
-
 
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
   val repository = new Repository(config)
   val gateway = new Gateway(config)
-
-
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-code") {
