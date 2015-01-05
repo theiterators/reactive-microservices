@@ -18,14 +18,23 @@ import scala.slick.driver.PostgresDriver.simple._
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 case class CodeCard(id: Long, codes: Seq[String])
-case class AuthEntry(userIdentifier : String, identityId: Long, createdAt: Long, lastCard: Option[Long] = None)
+case class AuthEntry(userIdentifier : String, identityId: Long, createdAt: Long, lastCard: Long)
 case class Code(userIdentifier: String, cardIndex: Long, codeIndex: Long, code: String, createdAt: Long, activatedAt: Option[Long] = None,usedAt: Option[Long] = None)
+
+case class RegisterResponse(identity: Identity, userIdentifier: String, codesCard: CodeCard)
+case class LoginRequest(userIdentifier: String, cardIndex: Long, codeIndex: Long, code: String)
+case class ActivateCodeRequest(userIdentifier: String)
+case class ActivateCodeResponse(cardIndex: Long, codeIndex: Long)
+case class GetCodeCardRequest(userIdentifier: String)
+case class GetCodeCardResponse(userIdentifier: String, codesCard: CodeCard)
+
+
 
 class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
   def userIdentifier = column[String]("user_identifier", O.NotNull)
   def identityId = column[Long]("identity_id", O.NotNull)
   def createdAt = column[Long]("created_at", O.NotNull)
-  def lastCard = column[Option[Long]]("last_card")
+  def lastCard = column[Long]("last_card")
   override def * : ProvenShape[AuthEntry] = (userIdentifier,identityId, createdAt,lastCard) <>((AuthEntry.apply _).tupled, AuthEntry.unapply)
 }
 class Codes(tag: Tag) extends Table[Code](tag, "code") {
@@ -56,10 +65,13 @@ object AuthCode extends App with DefaultJsonProtocol {
   implicit val tokenFormat = jsonFormat4(Token)
   implicit val codeCardFormat = jsonFormat2(CodeCard)
   implicit val authEntryFormat = jsonFormat4(AuthEntry)
-  implicit val registerResponse = jsonFormat3(RegisterResponse)
-  implicit val activateCodeRequest = jsonFormat1(ActivateCodeRequest)
-  implicit val activateCodeResponse = jsonFormat2(ActivateCodeResponse)
-  implicit val loginRequest = jsonFormat4(LoginRequest)
+  implicit val registerResponseFormat = jsonFormat3(RegisterResponse)
+  implicit val loginRequestFormat = jsonFormat4(LoginRequest)
+  implicit val activateCodeRequestFormat = jsonFormat1(ActivateCodeRequest)
+  implicit val activateCodeResponseFormat = jsonFormat2(ActivateCodeResponse)
+  implicit val getCodeCardRequestFormat = jsonFormat1(GetCodeCardRequest)
+  implicit val getCodeCardResponseFormat = jsonFormat2(GetCodeCardResponse)
+
 
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
@@ -67,57 +79,27 @@ object AuthCode extends App with DefaultJsonProtocol {
   val repository = new Repository(config)
   val gateway = new Gateway(config)
 
-  case class ActivateCodeRequest(userIdentifier: String)
-  case class ActivateCodeResponse(cardId: Long, codeId: Long)
-  case class RegisterResponse(identity: Identity, userIdentifier: String, codesCard: CodeCard)
-  case class LoginRequest(userIdentifier: String, cardIndex: Long, codeIndex: Long, code: String)
 
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-code") {
-      path("register") {
-        pathEndOrSingleSlash {
-          post {
-            optionalHeaderValueByName("Auth-Token") { tokenValue =>
-              complete {
-                register(tokenValue)
-              }
-            }
-          }
+      (path("register") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
+        complete {
+          register(tokenValue)
         }
       } ~
-        path("login" / "activate") {
-          pathEndOrSingleSlash {
-            post {
-              entity(as[ActivateCodeRequest]) { request =>
-                complete {
-                  activateCode(request)
-                }
-              }
-            }
+        (path("login" / "activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
+          complete {
+            activateCode(request)
           }
         } ~
-        path("login") {
-          pathEndOrSingleSlash {
-            post {
-              optionalHeaderValueByName("Auth-Token") { tokenValue =>
-                entity(as[LoginRequest]) { request =>
-                  complete {
-                    login(request, tokenValue)
-                  }
-                }
-              }
-            }
+        (path("login") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
+          complete {
+            login(request, tokenValue)
           }
-        } ~ path("codes" / "generate") {
-        pathEndOrSingleSlash {
-          get {
-            optionalHeaderValueByName("Auth-Token") { tokenValue =>
-              complete {
-                OK -> "wooo"
-              }
-            }
-          }
+        } ~ (path("codes") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
+        complete {
+          getCodeCard(request, tokenValue)
         }
       }
     }
@@ -168,19 +150,32 @@ object AuthCode extends App with DefaultJsonProtocol {
     }
   }
 
-  def generateCodeCard() = ???
+  def getCodeCard(request:GetCodeCardRequest, tokenValueOption: Option[String]): Future[Either[String, GetCodeCardResponse]] =
+      tokenValueOption match {
+        case Some(tokenValue) =>
+          gateway.requestRelogin(tokenValue).map {
+            case None => Left("Token expired or not found")
+            case Some(token) if (repository.getIdentity(request.userIdentifier) == token.identityId) =>
+              Right(GetCodeCardResponse(request.userIdentifier, generateCodeCard(repository.getNextCardIndex(request.userIdentifier), request.userIdentifier)))
+            //TODO ten case wykona się jezeli zalogowany user będzie próbował pobrać kody innego user, gdybyśmy dali tu komunikat "nie masz uprawnień" da sie odkryć jakie konta istnieją w systemie
+            case Some(token) => Left("Token expired or not found")
+          }
+        case None => Future {
+          Left("Token expired or not found")
+        }
+      }
 
 
   private def acquireIdentity(tokenValueOption: Option[String])(implicit ec: ExecutionContext): Future[Either[String, Identity]] =
     tokenValueOption match {
       case Some(tokenValue) => gateway.requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
-      case None => gateway.requestNewIdentity().map(Right(_))
+      case None => gateway.requestNewIdentity.map(Right(_))
     }
 
   private def generateUserIdentifier = f"${Random.nextInt(100000)}%05d${Random.nextInt(100000)}%05d"
 
   private def generateAuthEntry(identity: Identity) = db.withSession { implicit s =>
-    val authEntry = AuthEntry(generateUserIdentifier,identity.id,System.currentTimeMillis())
+    val authEntry = AuthEntry(generateUserIdentifier,identity.id,System.currentTimeMillis(),1)
     authEntriesQuery += authEntry
     authEntry
   }
@@ -213,6 +208,13 @@ class Repository(config: Config) {
   def getIdentity(userIdentifier: String) =
     db.withSession { implicit s =>
       authEntriesQuery.filter(line => (line.userIdentifier === userIdentifier)).map(_.identityId).first
+    }
+
+  def getNextCardIndex(userIdentifier: String): Long =
+    db.withSession { implicit s =>
+      val next = authEntriesQuery.filter(line => (line.userIdentifier === userIdentifier)).map(_.lastCard).first + 1
+      authEntriesQuery.filter(line => (line.userIdentifier === userIdentifier)).map(_.lastCard).update(next)
+      next
     }
 
 }

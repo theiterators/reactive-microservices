@@ -9,30 +9,18 @@ import akka.http.model.StatusCodes._
 import akka.http.unmarshalling.Unmarshal
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import spray.json._
 import scala.concurrent.{ExecutionContext, Future}
 
-case class InternalLoginRequest(identityId: Long, authMethod: String = "password")
-case class InternalReloginRequest(tokenValue: String, authMethod: String = "password")
+case class InternalLoginRequest(identityId: Long, authMethod: String = "codeCard")
+case class InternalReloginRequest(tokenValue: String, authMethod: String = "codeCard")
 
-class Gateway(config: Config)(implicit actorSystem: ActorSystem, materializer: FlowMaterializer) extends DefaultJsonProtocol {
+class Gateway(config: Config)(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext) extends AuthCodeJsonProtocol {
   val identityManagerHost = config.getString("services.identity-manager.host")
   val identityManagerPort = config.getInt("services.identity-manager.port")
   val tokenManagerHost = config.getString("services.token-manager.host")
   val tokenManagerPort = config.getInt("services.token-manager.port")
-  implicit val identityFormat = jsonFormat1(Identity)
-  implicit val tokenFormat = jsonFormat4(Token)
-  implicit val internalLoginRequestFormat = jsonFormat2(InternalLoginRequest)
-  implicit val internalReloginRequestFormat = jsonFormat2(InternalReloginRequest)
-  import akka.http.marshallers.sprayjson.SprayJsonSupport._
-
-
   val identityManagerConnection = Http().outgoingConnection(identityManagerHost, identityManagerPort)
   val tokenManagerConnection = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
-
-
-
-
 
   private def requestIdentityManager(request: HttpRequest): Future[HttpResponse] =
     Source.single(request).via(identityManagerConnection.flow).runWith(Sink.head)
@@ -49,7 +37,7 @@ class Gateway(config: Config)(implicit actorSystem: ActorSystem, materializer: F
       }
     }
 
-  def requestNewIdentity()(implicit ec: ExecutionContext): Future[Identity] =
+  def requestNewIdentity(implicit ec: ExecutionContext): Future[Identity] =
     requestIdentityManager(RequestBuilding.Post("/identities")).flatMap { response =>
       response.status match {
         case status if status.isSuccess => Unmarshal(response.entity).to[Identity]
