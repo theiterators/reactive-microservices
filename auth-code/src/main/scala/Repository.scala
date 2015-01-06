@@ -3,6 +3,7 @@ import scala.slick.lifted.{ProvenShape, Tag}
 import scala.slick.driver.PostgresDriver.simple._
 
 case class AuthEntry(userIdentifier: String, identityId: Long, createdAt: Long, lastCard: Long)
+
 case class Code(userIdentifier: String, cardIndex: Long, codeIndex: Long, code: String, createdAt: Long, activatedAt: Option[Long] = None, usedAt: Option[Long] = None)
 
 class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
@@ -10,7 +11,7 @@ class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
   def identityId = column[Long]("identity_id", O.NotNull)
   def createdAt = column[Long]("created_at", O.NotNull)
   def lastCard = column[Long]("last_card")
-  override def * : ProvenShape[AuthEntry] = (userIdentifier, identityId, createdAt, lastCard) <>((AuthEntry.apply _).tupled, AuthEntry.unapply)
+  override def * : ProvenShape[AuthEntry] = (userIdentifier, identityId, createdAt, lastCard) <> (AuthEntry.tupled, AuthEntry.unapply)
 }
 
 class Codes(tag: Tag) extends Table[Code](tag, "code") {
@@ -21,17 +22,13 @@ class Codes(tag: Tag) extends Table[Code](tag, "code") {
   def createdAt = column[Long]("created_at", O.NotNull)
   def activatedAt = column[Option[Long]]("activated_at")
   def usedAt = column[Option[Long]]("used_at")
-  override def * : ProvenShape[Code] = (userIdentifier, cardIndex, codeIndex, code, createdAt, activatedAt, usedAt) <>((Code.apply _).tupled, Code.unapply)
+  override def * : ProvenShape[Code] = (userIdentifier, cardIndex, codeIndex, code, createdAt, activatedAt, usedAt) <> (Code.tupled, Code.unapply)
 }
 
-class Repository(config: Config) {
-  val dbUrl = config.getString("db.url")
-  val dbUser = config.getString("db.user")
-  val dbPassword = config.getString("db.password")
+class Repository extends AuthCodeConfig{
   val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   val codesQuery = TableQuery[Codes]
   val authEntriesQuery = TableQuery[AuthEntries]
-
 
   def useCode(userIdentifier: String, cardIdx: Long, codeIdx: Long, code: String): Int =
     db.withSession { implicit s =>
@@ -50,14 +47,12 @@ class Repository(config: Config) {
   }
   }
 
-  def saveCodeCard(codeCard: CodeCard) = db.withSession { implicit s =>
+  def saveAuthEntryAndCodeCard(authEntry: AuthEntry, codeCard: CodeCard) = db.withSession { implicit s => s.withTransaction {
+    authEntriesQuery += authEntry
     codeCard.codes.zipWithIndex.map { case (code, idx) =>
       codesQuery += Code(codeCard.userIdentifier, codeCard.id, idx.toLong, code, System.currentTimeMillis())
     }
   }
-
-  def saveAuthEntry(authEntry: AuthEntry) = db.withSession { implicit s =>
-    authEntriesQuery += authEntry
   }
 
   def getInactiveCodesForUser(userIdentifier: String) : Seq[Code] = db.withSession { implicit s =>

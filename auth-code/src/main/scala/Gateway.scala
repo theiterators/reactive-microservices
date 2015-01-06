@@ -12,13 +12,10 @@ import com.typesafe.config.Config
 import scala.concurrent.{ExecutionContext, Future}
 
 case class InternalLoginRequest(identityId: Long, authMethod: String = "codecard")
+
 case class InternalReloginRequest(tokenValue: String, authMethod: String = "codecard")
 
-class Gateway(config: Config)(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext) extends AuthCodeJsonProtocol {
-  val identityManagerHost = config.getString("services.identity-manager.host")
-  val identityManagerPort = config.getInt("services.identity-manager.port")
-  val tokenManagerHost = config.getString("services.token-manager.host")
-  val tokenManagerPort = config.getInt("services.token-manager.port")
+class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext) extends AuthCodeJsonProtocol with AuthCodeConfig{
   val identityManagerConnection = Http().outgoingConnection(identityManagerHost, identityManagerPort)
   val tokenManagerConnection = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
 
