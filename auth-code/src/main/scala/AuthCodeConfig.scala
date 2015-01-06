@@ -13,4 +13,7 @@ trait AuthCodeConfig {
   val identityManagerPort = config.getInt("services.identity-manager.port")
   val tokenManagerHost = config.getString("services.token-manager.host")
   val tokenManagerPort = config.getInt("services.token-manager.port")
+
+  val cardSize = config.getInt("auth-code.cardSize")
+  val codeActiveTime = config.getInt("auth-code.code.active-time")
 }

@@ -2,7 +2,7 @@ import java.security.SecureRandom
 import scala.concurrent.{Future, ExecutionContext}
 import scala.concurrent._
 
-class AuthCodeService(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) {
+class AuthCodeService(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) extends AuthCodeConfig {
   val random = new SecureRandom
 
   def register(tokenValueOption: Option[String])(implicit ec: ExecutionContext): Future[Either[String, RegisterResponse]] =
@@ -66,5 +66,5 @@ class AuthCodeService(gateway: Gateway, repository: Repository)(implicit ec: Exe
     AuthEntry(f"${random.nextInt(100000)}%05d${random.nextInt(100000)}%05d", identity.id, System.currentTimeMillis(), 1)
 
   private def generateCodeCard(cardIndex: Long, userIdentifier: String) =
-    CodeCard(cardIndex, Seq.fill(20) {f"${random.nextInt(1000000)}%06d" }, userIdentifier)
+    CodeCard(cardIndex, Seq.fill(cardSize) {f"${random.nextInt(1000000)}%06d" }, userIdentifier)
 }

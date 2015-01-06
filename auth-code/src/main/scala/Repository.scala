@@ -32,7 +32,7 @@ class Repository extends AuthCodeConfig{
 
   def useCode(userIdentifier: String, cardIdx: Long, codeIdx: Long, code: String): Int =
     db.withSession { implicit s =>
-      codesQuery.filter(codeQ => (codeQ.userIdentifier === userIdentifier && codeQ.cardIndex === cardIdx && codeQ.codeIndex === codeIdx && codeQ.code === code && codeQ.usedAt.isEmpty === true))
+      codesQuery.filter(codeQ => (codeQ.userIdentifier === userIdentifier && codeQ.cardIndex === cardIdx && codeQ.codeIndex === codeIdx && codeQ.code === code && codeQ.usedAt.isEmpty === true && codeQ.activatedAt >= (System.currentTimeMillis - codeActiveTime)))
         .map(_.usedAt).update(Some(System.currentTimeMillis))
     }
 
@@ -55,11 +55,11 @@ class Repository extends AuthCodeConfig{
   }
   }
 
-  def getInactiveCodesForUser(userIdentifier: String) : Seq[Code] = db.withSession { implicit s =>
+  def getInactiveCodesForUser(userIdentifier: String): Seq[Code] = db.withSession { implicit s =>
     codesQuery.filter(code => (code.userIdentifier === userIdentifier && code.activatedAt.isEmpty === true)).list
   }
 
-  def activateCode(userIdentifier:String,cardIndex:Long,codeIndex:Long) = db.withSession { implicit s =>
+  def activateCode(userIdentifier: String, cardIndex: Long, codeIndex: Long) = db.withSession { implicit s =>
     codesQuery.filter(code => (code.userIdentifier === userIdentifier && code.cardIndex === cardIndex && code.codeIndex === codeIndex)).map(_.activatedAt).update(Some(System.currentTimeMillis))
   }
 }
