@@ -4,7 +4,7 @@ import scala.concurrent.{Future, ExecutionContext}
 class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) extends AuthCodeCardConfig {
   private val random = new SecureRandom
 
-  def register(tokenValueOption: Option[String])(implicit ec: ExecutionContext): Future[Either[String, RegisterResponse]] =
+  def register(tokenValueOption: Option[String]): Future[Either[String, RegisterResponse]] =
     acquireIdentity(tokenValueOption).map {
       case Right(identity) =>
         val authEntry = generateAuthEntry(identity)
@@ -14,7 +14,7 @@ class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec:
       case Left(l) => Left(l)
     }
 
-  def activateCode(request: ActivateCodeRequest)(implicit ec: ExecutionContext): Future[Either[String, ActivateCodeResponse]] = {
+  def activateCode(request: ActivateCodeRequest): Future[Either[String, ActivateCodeResponse]] = {
     Future.successful {
       val codes = repository.getInactiveCodesForUser(request.userIdentifier)
       codes.length match {
@@ -55,7 +55,7 @@ class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec:
       case None => Future.successful(Left("Token expired or not found"))
     }
 
-  private def acquireIdentity(tokenValueOption: Option[String])(implicit ec: ExecutionContext): Future[Either[String, Identity]] =
+  private def acquireIdentity(tokenValueOption: Option[String]): Future[Either[String, Identity]] =
     tokenValueOption match {
       case Some(tokenValue) => gateway.requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
       case None => gateway.requestNewIdentity.map(Right(_))
