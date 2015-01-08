@@ -35,7 +35,7 @@ object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCod
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-codecard") {
-      (path("register") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
+      (path("register" / "codecard" ) & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
         complete {
           service.register(tokenValue).map {
             case Right(response) => ToResponseMarshallable(Created -> response)
@@ -43,7 +43,7 @@ object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCod
           }
         }
       } ~
-      (path("login" / "activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
+      (path("login" / "codecard" / "activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
         complete {
           service.activateCode(request).map {
             case Right(response) => ToResponseMarshallable(OK -> response)
@@ -51,7 +51,7 @@ object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCod
           }
         }
       } ~
-      (path("login") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
+      (path("login" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
         complete {
           service.login(request, tokenValue).map {
             case Right(response) => ToResponseMarshallable(Created -> response)
@@ -59,7 +59,7 @@ object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCod
           }
         }
       } ~
-      (path("codes") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
+      (path("generate" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
         complete {
           service.getCodeCard(request, tokenValue).map {
             case Right(response) => ToResponseMarshallable(OK -> response)
