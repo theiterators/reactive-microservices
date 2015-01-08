@@ -1,6 +1,6 @@
 import spray.json.DefaultJsonProtocol
 
-trait AuthCodeJsonProtocol extends DefaultJsonProtocol {
+trait AuthCodeCardJsonProtocol extends DefaultJsonProtocol {
   implicit val identityFormat = jsonFormat1(Identity)
   implicit val tokenFormat = jsonFormat4(Token)
   implicit val codeCardFormat = jsonFormat3(CodeCard)

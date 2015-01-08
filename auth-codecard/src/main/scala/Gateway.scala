@@ -15,7 +15,7 @@ case class InternalLoginRequest(identityId: Long, authMethod: String = "codecard
 
 case class InternalReloginRequest(tokenValue: String, authMethod: String = "codecard")
 
-class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext) extends AuthCodeJsonProtocol with AuthCodeConfig{
+class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext) extends AuthCodeCardJsonProtocol with AuthCodeCardConfig{
   val identityManagerConnection = Http().outgoingConnection(identityManagerHost, identityManagerPort)
   val tokenManagerConnection = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
 

@@ -24,17 +24,17 @@ case class GetCodeCardRequest(userIdentifier: String)
 
 case class GetCodeCardResponse(userIdentifier: String, codesCard: CodeCard)
 
-object AuthCode extends App with AuthCodeJsonProtocol with AuthCodeConfig {
+object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCodeCardConfig {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val repository = new Repository
   val gateway = new Gateway
-  val service = new AuthCodeService(gateway,repository)
+  val service = new AuthCodeCardService(gateway,repository)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
-    logRequestResult("auth-code") {
+    logRequestResult("auth-codecard") {
       (path("register") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
         complete {
           service.register(tokenValue).map {

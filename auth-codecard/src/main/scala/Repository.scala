@@ -25,7 +25,7 @@ class Codes(tag: Tag) extends Table[Code](tag, "code") {
   override def * : ProvenShape[Code] = (userIdentifier, cardIndex, codeIndex, code, createdAt, activatedAt, usedAt) <> (Code.tupled, Code.unapply)
 }
 
-class Repository extends AuthCodeConfig{
+class Repository extends AuthCodeCardConfig{
   val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   val codesQuery = TableQuery[Codes]
   val authEntriesQuery = TableQuery[AuthEntries]

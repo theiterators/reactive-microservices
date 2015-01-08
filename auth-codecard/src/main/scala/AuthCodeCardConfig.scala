@@ -1,6 +1,6 @@
 import com.typesafe.config.ConfigFactory
 
-trait AuthCodeConfig {
+trait AuthCodeCardConfig {
   val config = ConfigFactory.load()
   val interface = config.getString("http.interface")
   val port = config.getInt("http.port")
@@ -14,6 +14,6 @@ trait AuthCodeConfig {
   val tokenManagerHost = config.getString("services.token-manager.host")
   val tokenManagerPort = config.getInt("services.token-manager.port")
 
-  val cardSize = config.getInt("auth-code.cardSize")
-  val codeActiveTime = config.getInt("auth-code.code.active-time")
+  val cardSize = config.getInt("auth-codecard.cardSize")
+  val codeActiveTime = config.getInt("auth-codecard.code.active-time")
 }
