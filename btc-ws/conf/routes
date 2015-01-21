@@ -1,0 +1,1 @@
+GET     /btc/:authToken    controllers.BtcWs.index(authToken: String)
