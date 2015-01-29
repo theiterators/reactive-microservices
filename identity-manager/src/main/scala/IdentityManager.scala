@@ -5,15 +5,12 @@ import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.stream.FlowMaterializer
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.blocking
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.lifted.{ProvenShape, Tag}
 import spray.json.DefaultJsonProtocol
 
 case class Identity(id: Option[Long], createdAt: Long)
-
-object Identity extends DefaultJsonProtocol {
-  implicit val identityFormat = jsonFormat2(Identity.apply)
-}
 
 class Identities(tag: Tag) extends Table[Identity](tag, "identity") {
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -23,7 +20,11 @@ class Identities(tag: Tag) extends Table[Identity](tag, "identity") {
   override def * : ProvenShape[Identity] = (id.?, createdAt) <>((Identity.apply _).tupled, Identity.unapply)
 }
 
-object IdentityManager extends App {
+trait IdentityManagerJsonProtocols extends DefaultJsonProtocol {
+  protected implicit val identityFormat = jsonFormat2(Identity.apply)
+}
+
+object IdentityManager extends App with IdentityManagerJsonProtocols {
   private val config = ConfigFactory.load()
   private val interface = config.getString("http.interface")
   private val port = config.getInt("http.port")
@@ -38,12 +39,20 @@ object IdentityManager extends App {
   private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   private val identities = TableQuery[Identities]
 
-  private def getAllIdentities(): List[Identity] = db.withSession { implicit s =>
-    identities.list
+  private def getAllIdentities(): List[Identity] = {
+    blocking {
+      db.withSession { implicit s =>
+        identities.list
+      }
+    }
   }
 
-  private def saveIdentity(identity: Identity): Identity = db.withSession { implicit s =>
-    identities returning identities.map(_.id) into ((_, id) => identity.copy(id = Option(id))) += identity
+  private def saveIdentity(identity: Identity): Identity = {
+    blocking {
+      db.withSession { implicit s =>
+        identities returning identities.map(_.id) into ((_, id) => identity.copy(id = Option(id))) += identity
+      }
+    }
   }
 
   Http().bind(interface = interface, port = port).startHandlingWith {
