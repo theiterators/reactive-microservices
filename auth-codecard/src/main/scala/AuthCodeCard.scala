@@ -24,7 +24,7 @@ object AuthCodeCardCard extends App with AuthCodeCardJsonProtocols with AuthCode
 
   val repository = new Repository
   val gateway = new Gateway
-  val service = new AuthCodeCardService(gateway,repository)
+  val service = new AuthCodeCardService(gateway, repository)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-codecard") {
