@@ -16,13 +16,13 @@ case class LoginRequest(identityId: Long, authMethod: String = "password")
 case class ReloginRequest(tokenValue: String, authMethod: String = "password")
 
 object AuthPassword extends App with AuthPasswordJsonProtocols with AuthPasswordConfig {
+  implicit val actorSystem = ActorSystem()
+  implicit val materializer = FlowMaterializer()
+  implicit val dispatcher = actorSystem.dispatcher
 
-  private implicit val actorSystem = ActorSystem()
-  private implicit val materializer = FlowMaterializer()
-  private implicit val dispatcher = actorSystem.dispatcher
-
-  private val gateway = new Gateway()
-  private val service = new AuthPasswordService(gateway)
+  val repository = new Repository
+  val gateway = new Gateway
+  val service = new AuthPasswordService(repository, gateway)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-password") {

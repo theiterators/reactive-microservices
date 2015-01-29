@@ -1,7 +1,6 @@
 import spray.json._
 
 trait AuthPasswordJsonProtocols extends DefaultJsonProtocol {
-
   protected implicit val emailFormat = new JsonFormat[EmailAddress] {
     override def write(obj: EmailAddress): JsValue = JsString(obj.address)
 

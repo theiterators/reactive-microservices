@@ -15,21 +15,21 @@ import scala.concurrent.{ExecutionContext, Future}
 class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext)
   extends AuthPasswordJsonProtocols with AuthPasswordConfig {
 
-  private val identityManagerConnection = Http().outgoingConnection(identityManagerHost, identityManagerPort)
-  private val tokenManagerConnection = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
+  private val identityManagerConnectionFlow = Http().outgoingConnection(identityManagerHost, identityManagerPort).flow
+  private val tokenManagerConnectionFlow = Http().outgoingConnection(tokenManagerHost, tokenManagerPort).flow
 
   private def requestIdentityManager(request: HttpRequest): Future[HttpResponse] = {
-    Source.single(request).via(identityManagerConnection.flow).runWith(Sink.head)
+    Source.single(request).via(identityManagerConnectionFlow).runWith(Sink.head)
   }
 
   private def requestTokenManager(request: HttpRequest): Future[HttpResponse] = {
-    Source.single(request).via(tokenManagerConnection.flow).runWith(Sink.head)
+    Source.single(request).via(tokenManagerConnectionFlow).runWith(Sink.head)
   }
 
   def requestToken(tokenValue: String): Future[Either[String, Token]] = {
     requestTokenManager(RequestBuilding.Get(s"/tokens/$tokenValue")).flatMap { response =>
       response.status match {
-        case s if s.isSuccess() => Unmarshal(response.entity).to[Token].map(Right(_))
+        case Success(_) => Unmarshal(response.entity).to[Token].map(Right(_))
         case NotFound => Future.successful(Left("Token expired or not found"))
         case _ => Future.failed(new IOException(s"Token request failed with status ${response.status} and error ${response.entity}"))
       }
@@ -39,7 +39,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
   def requestNewIdentity(): Future[Identity] = {
     requestIdentityManager(RequestBuilding.Post("/identities")).flatMap { response =>
       response.status match {
-        case s if s.isSuccess() => Unmarshal(response.entity).to[Identity]
+        case Success(_) => Unmarshal(response.entity).to[Identity]
         case _ => Future.failed(new IOException(s"Identity request failed with status ${response.status} and error ${response.entity}"))
       }
     }
@@ -49,7 +49,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
     val loginRequest = LoginRequest(identityId)
     requestTokenManager(RequestBuilding.Post("/tokens", loginRequest)).flatMap { response =>
       response.status match {
-        case s if s.isSuccess() => Unmarshal(response.entity).to[Token]
+        case Success(_) => Unmarshal(response.entity).to[Token]
         case _ => Future.failed(new IOException(s"Login request failed with status ${response.status} and error ${response.entity}"))
       }
     }
@@ -58,7 +58,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
   def requestRelogin(tokenValue: String): Future[Option[Token]] = {
     requestTokenManager(RequestBuilding.Patch("/tokens", ReloginRequest(tokenValue))).flatMap { response =>
       response.status match {
-        case s if s.isSuccess() => Unmarshal(response.entity).to[Token].map(Option(_))
+        case Success(_) => Unmarshal(response.entity).to[Token].map(Option(_))
         case NotFound => Future.successful(None)
         case _ => Future.failed(new IOException(s"Relogin request failed with status ${response.status} and error ${response.entity}"))
       }

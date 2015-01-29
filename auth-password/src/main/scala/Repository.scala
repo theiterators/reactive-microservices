@@ -1,3 +1,4 @@
+import scala.concurrent.blocking
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.meta.MTable
 import scala.slick.lifted.{ProvenShape, Tag}
@@ -30,43 +31,35 @@ class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
   override def * : ProvenShape[AuthEntry] = (id.?, identityId, createdAt, email, password) <> (AuthEntry.tupled, AuthEntry.unapply)
 }
 
-object Repository extends AuthPasswordConfig {
+class Repository extends AuthPasswordConfig {
   private val authEntries = TableQuery[AuthEntries]
 
   private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
 
-  db.withSession { implicit session =>
-    if (MTable.getTables("auth_entry").list.isEmpty) {
-      authEntries.ddl.create
+  def createAuthEntry(entry: AuthEntry) = {
+    blocking {
+      db.withSession { implicit session =>
+        authEntries.insert(entry).run
+      }
     }
   }
 
-  def exists(email: EmailAddress): Boolean = {
-    db.withSession { implicit session =>
-      byEmailCompiled(email).firstOption.isDefined
+  def updateAuthEntry(entry: AuthEntry) = {
+    blocking {
+      db.withSession { implicit session =>
+        authEntries.filter(_.id === entry.id.get).update(entry)
+      }
     }
   }
 
-  def save(entry: AuthEntry) = {
-    db.withSession { implicit session =>
-      authEntries.insert(entry).run
-    }
-  }
-
-  def update(entry: AuthEntry) = {
-    db.withSession { implicit session =>
-      authEntries.filter(_.id === entry.id.get).update(entry)
-    }
-  }
-
-  def get(email: EmailAddress): Option[AuthEntry] = {
-    db.withSession { implicit session =>
-      byEmailCompiled(email).firstOption
+  def findAuthEntry(email: EmailAddress): Option[AuthEntry] = {
+    blocking {
+      db.withSession { implicit session =>
+        byEmailCompiled(email).firstOption
+      }
     }
   }
 
   private def byEmailQuery(email: Column[EmailAddress]) = authEntries.filter(_.email === email)
-
   private val byEmailCompiled = Compiled(byEmailQuery _)
-
 }
