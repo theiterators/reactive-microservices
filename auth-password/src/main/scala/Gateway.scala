@@ -1,5 +1,3 @@
-import java.io.IOException
-
 import akka.actor.ActorSystem
 import akka.http.Http
 import akka.http.client.RequestBuilding
@@ -9,7 +7,11 @@ import akka.http.model.{HttpRequest, HttpResponse}
 import akka.http.unmarshalling.Unmarshal
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{Sink, Source}
+import java.io.IOException
 import scala.concurrent.{ExecutionContext, Future}
+
+case class InternalLoginRequest(identityId: Long, authMethod: String = "password")
+case class InternalReloginRequest(tokenValue: String, authMethod: String = "password")
 
 class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext)
   extends AuthPasswordJsonProtocols with AuthPasswordConfig {
@@ -45,7 +47,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
   }
 
   def requestLogin(identityId: Long): Future[Token] = {
-    val loginRequest = LoginRequest(identityId)
+    val loginRequest = InternalLoginRequest(identityId)
     requestTokenManager(RequestBuilding.Post("/tokens", loginRequest)).flatMap { response =>
       response.status match {
         case Success(_) => Unmarshal(response.entity).to[Token]
@@ -55,7 +57,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
   }
 
   def requestRelogin(tokenValue: String): Future[Option[Token]] = {
-    requestTokenManager(RequestBuilding.Patch("/tokens", ReloginRequest(tokenValue))).flatMap { response =>
+    requestTokenManager(RequestBuilding.Patch("/tokens", InternalReloginRequest(tokenValue))).flatMap { response =>
       response.status match {
         case Success(_) => Unmarshal(response.entity).to[Token].map(Option(_))
         case NotFound => Future.successful(None)

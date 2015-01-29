@@ -12,8 +12,6 @@ case class PasswordResetRequest(email: EmailAddress, newPassword: String)
 
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
-case class LoginRequest(identityId: Long, authMethod: String = "password")
-case class ReloginRequest(tokenValue: String, authMethod: String = "password")
 
 object AuthPassword extends App with AuthPasswordJsonProtocols with AuthPasswordConfig {
   implicit val actorSystem = ActorSystem()
