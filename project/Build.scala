@@ -1,3 +1,4 @@
+import play.PlayScala
 import sbt._
 
 object Root extends Build {
@@ -5,4 +6,5 @@ object Root extends Build {
     lazy val authFb = Project(id = "auth-fb", base = file("auth-fb"))
     lazy val identityManager = Project(id = "identity-manager", base = file("identity-manager"))
     lazy val authCodeCard = Project(id = "auth-codecard", base = file("auth-codecard"))
+    lazy val btcWs = Project(id = "btc-ws", base = file("btc-ws")).enablePlugins(PlayScala)
 }
