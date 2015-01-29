@@ -2,12 +2,12 @@ name := "token-manager"
 
 version := "1.0"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.5"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 libraryDependencies ++= {
-  val akkaV = "2.3.7"
+  val akkaV = "2.3.9"
   val akkaStreamV = "1.0-M2"
   val sprayJsonV = "1.3.1"
   val reactiveMongoV = "0.10.5.0.akka23"
