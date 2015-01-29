@@ -18,24 +18,21 @@ import spray.json.DefaultJsonProtocol
 
 case class LoginRequest(identityId: Long, authMethod: String)
 
-object LoginRequest extends DefaultJsonProtocol {
-  implicit val loginRequestFormat = jsonFormat2(LoginRequest.apply)
-}
-
 case class ReloginRequest(tokenValue: String, authMethod: String)
-
-object ReloginRequest extends DefaultJsonProtocol {
-  implicit val reloginRequestFormat = jsonFormat2(ReloginRequest.apply)
-}
 
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object Token extends DefaultJsonProtocol {
-  implicit val tokenFormat = jsonFormat4(Token.apply)
-  implicit val tokenHandler = Macros.handler[Token]
+trait TokenManagerMongoHandlers {
+  protected implicit val tokenHandler = Macros.handler[Token]
 }
 
-object TokenManager extends App {
+trait TokenManagerJsonProtocols extends DefaultJsonProtocol {
+  protected implicit val tokenFormat = jsonFormat4(Token.apply)
+  protected implicit val reloginRequestFormat = jsonFormat2(ReloginRequest.apply)
+  protected implicit val loginRequestFormat = jsonFormat2(LoginRequest.apply)
+}
+
+object TokenManager extends App with TokenManagerMongoHandlers with TokenManagerJsonProtocols {
   private val config = ConfigFactory.load()
   private val interface = config.getString("http.interface")
   private val port = config.getInt("http.port")
@@ -65,9 +62,7 @@ object TokenManager extends App {
     tokens.insert(token).map(_ => token)
   }
 
-  private def updateTokenByValue(value: String, token: Token): Future[Int] = {
-    tokens.update(BSONDocument("value" -> value), token).map(_.updated)
-  }
+  private def updateTokenByValue(value: String, token: Token): Future[Int] = tokens.update(BSONDocument("value" -> value), token).map(_.updated)
 
   private def deleteTokenByValue(value: String): Future[Int] = {
     tokens.remove(BSONDocument("value" -> value)).map(_.updated)
@@ -83,6 +78,12 @@ object TokenManager extends App {
     }
   }
 
+  private def createFreshToken(identityId: Long, authMethod: String): Token = {
+    Token(generateToken, System.currentTimeMillis() + tokenValidityLength, identityId, Set(authMethod))
+  }
+
+  private def refreshToken(token: Token): Token = token.copy(validTo = math.max(token.validTo, System.currentTimeMillis() + sessionLength))
+
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("token-manager") {
       pathPrefix("tokens") {
@@ -90,7 +91,7 @@ object TokenManager extends App {
           post {
             entity(as[LoginRequest]) { loginRequest =>
               complete {
-                val newToken = Token(generateToken, System.currentTimeMillis() + tokenValidityLength, loginRequest.identityId, Set(loginRequest.authMethod))
+                val newToken = createFreshToken(loginRequest.identityId, loginRequest.authMethod)
                 insertToken(newToken).map(_ => newToken)
               }
             }
@@ -112,8 +113,7 @@ object TokenManager extends App {
               complete {
                 findValidTokenByValue(tokenValue).map {
                   case Some(token) =>
-                    // bump token validity if needed
-                    val newToken = token.copy(validTo = math.max(token.validTo, System.currentTimeMillis() + sessionLength))
+                    val newToken = refreshToken(token)
                     if (newToken != token) updateTokenByValue(token.value, newToken).onFailure { case t => logger.error(t, "Token refreshment failed") }
 
                     ToResponseMarshallable(token)
