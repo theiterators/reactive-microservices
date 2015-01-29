@@ -1,19 +1,18 @@
 import com.typesafe.config.ConfigFactory
 
 trait AuthCodeCardConfig {
-  val config = ConfigFactory.load()
-  val interface = config.getString("http.interface")
-  val port = config.getInt("http.port")
+  protected val config = ConfigFactory.load()
+  protected val interface = config.getString("http.interface")
+  protected val port = config.getInt("http.port")
+  protected val dbUrl = config.getString("db.url")
+  protected val dbUser = config.getString("db.user")
+  protected val dbPassword = config.getString("db.password")
 
-  val dbUrl = config.getString("db.url")
-  val dbUser = config.getString("db.user")
-  val dbPassword = config.getString("db.password")
+  protected val identityManagerHost = config.getString("services.identity-manager.host")
+  protected val identityManagerPort = config.getInt("services.identity-manager.port")
+  protected val tokenManagerHost = config.getString("services.token-manager.host")
+  protected val tokenManagerPort = config.getInt("services.token-manager.port")
 
-  val identityManagerHost = config.getString("services.identity-manager.host")
-  val identityManagerPort = config.getInt("services.identity-manager.port")
-  val tokenManagerHost = config.getString("services.token-manager.host")
-  val tokenManagerPort = config.getInt("services.token-manager.port")
-
-  val cardSize = config.getInt("auth-codecard.cardSize")
-  val codeActiveTime = config.getInt("auth-codecard.code.active-time")
+  protected val cardSize = config.getInt("auth-codecard.cardSize")
+  protected val codeActiveTime = config.getInt("auth-codecard.code.active-time")
 }

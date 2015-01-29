@@ -48,7 +48,7 @@ class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec:
       case Some(tokenValue) =>
         gateway.requestRelogin(tokenValue).map {
           case None => Left("Token expired or not found")
-          case Some(token) if (repository.getIdentity(request.userIdentifier) == token.identityId) =>
+          case Some(token) if repository.getIdentity(request.userIdentifier) == token.identityId =>
             Right(GetCodeCardResponse(request.userIdentifier, generateCodeCard(repository.getNextCardIndex(request.userIdentifier), request.userIdentifier)))
           case Some(token) => Left("Token expired or not found")
         }

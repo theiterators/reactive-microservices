@@ -6,25 +6,18 @@ import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.stream.FlowMaterializer
 
-case class Identity(id: Long)
-
-case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
-
 case class CodeCard(id: Long, codes: Seq[String], userIdentifier: String)
-
 case class RegisterResponse(identity: Identity, codesCard: CodeCard)
-
 case class LoginRequest(userIdentifier: String, cardIndex: Long, codeIndex: Long, code: String)
-
 case class ActivateCodeRequest(userIdentifier: String)
-
 case class ActivateCodeResponse(cardIndex: Long, codeIndex: Long)
-
 case class GetCodeCardRequest(userIdentifier: String)
-
 case class GetCodeCardResponse(userIdentifier: String, codesCard: CodeCard)
 
-object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCodeCardConfig {
+case class Identity(id: Long)
+case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
+
+object AuthCodeCardCard extends App with AuthCodeCardJsonProtocols with AuthCodeCardConfig {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
@@ -70,5 +63,3 @@ object AuthCodeCardCard$$ extends App with AuthCodeCardJsonProtocol with AuthCod
     }
   }
 }
-
-
