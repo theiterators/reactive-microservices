@@ -9,7 +9,6 @@ import akka.http.model.{HttpRequest, HttpResponse}
 import akka.http.unmarshalling.Unmarshal
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-
 import scala.concurrent.{ExecutionContext, Future}
 
 class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext)

@@ -1,5 +1,4 @@
 import org.mindrot.jbcrypt.BCrypt
-
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthPasswordService(repository: Repository, gateway: Gateway)(implicit ec: ExecutionContext) {
