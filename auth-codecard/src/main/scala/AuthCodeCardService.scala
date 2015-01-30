@@ -2,8 +2,6 @@ import java.security.SecureRandom
 import scala.concurrent.{Future, ExecutionContext}
 
 class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) extends AuthCodeCardConfig {
-  private val random = new SecureRandom
-
   def register(tokenValueOption: Option[String]): Future[Either[String, RegisterResponse]] =
     acquireIdentity(tokenValueOption).map {
       case Right(identity) =>
@@ -32,18 +30,17 @@ class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec:
       case 1 =>
         tokenValueOption match {
           case None => gateway.requestLogin(repository.getIdentity(request.userIdentifier)).map(Right(_))
-          case Some(tokenValue) => {
+          case Some(tokenValue) =>
             gateway.requestRelogin(tokenValue).map {
               case Some(token) => Right(token)
               case None => Left("Token expired or not found")
             }
-          }
         }
       case 0 => Future.successful(Left(s"Invalid code"))
     }
   }
 
-  def getCodeCard(request: GetCodeCardRequest, tokenValueOption: Option[String]): Future[Either[String, GetCodeCardResponse]] =
+  def getCodeCard(request: GetCodeCardRequest, tokenValueOption: Option[String]): Future[Either[String, GetCodeCardResponse]] = {
     tokenValueOption match {
       case Some(tokenValue) =>
         gateway.requestRelogin(tokenValue).map {
@@ -54,16 +51,22 @@ class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec:
         }
       case None => Future.successful(Left("Token expired or not found"))
     }
+  }
 
-  private def acquireIdentity(tokenValueOption: Option[String]): Future[Either[String, Identity]] =
+  private def acquireIdentity(tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
     tokenValueOption match {
       case Some(tokenValue) => gateway.requestToken(tokenValue).map(_.right.map(token => Identity(token.identityId)))
-      case None => gateway.requestNewIdentity.map(Right(_))
+      case None => gateway.requestNewIdentity().map(Right(_))
     }
+  }
 
-  private def generateAuthEntry(identity: Identity) =
+  private def generateAuthEntry(identity: Identity) = {
     AuthEntry(f"${random.nextInt(100000)}%05d${random.nextInt(100000)}%05d", identity.id, System.currentTimeMillis(), 1)
+  }
 
-  private def generateCodeCard(cardIndex: Long, userIdentifier: String) =
+  private def generateCodeCard(cardIndex: Long, userIdentifier: String) = {
     CodeCard(cardIndex, Seq.fill(cardSize) {f"${random.nextInt(1000000)}%06d" }, userIdentifier)
+  }
+
+  private val random = new SecureRandom
 }

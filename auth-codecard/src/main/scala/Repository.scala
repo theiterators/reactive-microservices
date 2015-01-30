@@ -26,11 +26,6 @@ class Codes(tag: Tag) extends Table[Code](tag, "code") {
 }
 
 class Repository extends AuthCodeCardConfig {
-  private val codesQuery = TableQuery[Codes]
-  private val authEntriesQuery = TableQuery[AuthEntries]
-
-  private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
-
   def useCode(userIdentifier: String, cardIdx: Long, codeIdx: Long, code: String): Int = {
     blocking {
       db.withSession { implicit s =>
@@ -95,4 +90,9 @@ class Repository extends AuthCodeCardConfig {
       }
     }
   }
+
+  private val codesQuery = TableQuery[Codes]
+  private val authEntriesQuery = TableQuery[AuthEntries]
+
+  private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
 }
