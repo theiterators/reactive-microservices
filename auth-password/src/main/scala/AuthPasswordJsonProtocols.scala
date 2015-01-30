@@ -15,6 +15,6 @@ trait AuthPasswordJsonProtocols extends DefaultJsonProtocol {
   protected implicit val resetRequestFormat = jsonFormat2(PasswordResetRequest)
   protected implicit val identityFormat = jsonFormat1(Identity)
   protected implicit val tokenFormat = jsonFormat4(Token)
-  protected implicit val loginRequestFormat = jsonFormat2(LoginRequest)
-  protected implicit val reloginRequestFormat = jsonFormat2(ReloginRequest)
+  protected implicit val loginRequestFormat = jsonFormat2(InternalLoginRequest)
+  protected implicit val reloginRequestFormat = jsonFormat2(InternalReloginRequest)
 }

@@ -2,7 +2,6 @@ import org.mindrot.jbcrypt.BCrypt
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthPasswordService(repository: Repository, gateway: Gateway)(implicit ec: ExecutionContext) {
-
   def register(request: PasswordRegisterRequest, tokenValueOption: Option[String]): Future[Either[String, Identity]] = {
     if (repository.findAuthEntry(request.email).isDefined) {
       Future.successful(Left(s"Wrong login data"))

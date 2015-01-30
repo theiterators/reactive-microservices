@@ -32,10 +32,6 @@ class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
 }
 
 class Repository extends AuthPasswordConfig {
-  private val authEntries = TableQuery[AuthEntries]
-
-  private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
-
   def createAuthEntry(entry: AuthEntry) = {
     blocking {
       db.withSession { implicit session =>
@@ -62,4 +58,8 @@ class Repository extends AuthPasswordConfig {
 
   private def byEmailQuery(email: Column[EmailAddress]) = authEntries.filter(_.email === email)
   private val byEmailCompiled = Compiled(byEmailQuery _)
+
+  private val authEntries = TableQuery[AuthEntries]
+
+  private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
 }
