@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.security.SecureRandom
 import scala.concurrent.{ExecutionContext, Future}
 
-class TokenManagerService(repository: Repository)(implicit actorSystem: ActorSystem, ec: ExecutionContext) extends TokenManagerConfig {
+class Service(repository: Repository)(implicit actorSystem: ActorSystem, ec: ExecutionContext) extends Config {
   def relogin(reloginRequest: ReloginRequest): Future[Option[Token]] = {
     repository.addMethodToValidTokenByValue(reloginRequest.tokenValue, reloginRequest.authMethod)
   }

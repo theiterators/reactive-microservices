@@ -13,13 +13,13 @@ case class AuthResponse(accessToken: String, expiresIn: Long, signedRequest: Str
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object AuthFb extends App with AuthFbJsonProtocols with AuthFbConfig {
+object AuthFb extends App with JsonProtocols with Config {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val gateway = new Gateway
-  val service = new AuthFbService(gateway)
+  val service = new Service(gateway)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-fb") {

@@ -14,7 +14,7 @@ case class InternalLoginRequest(identityId: Long, authMethod: String = "password
 case class InternalReloginRequest(tokenValue: String, authMethod: String = "password")
 
 class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext)
-  extends AuthPasswordJsonProtocols with AuthPasswordConfig {
+  extends JsonProtocols with Config {
 
   private val identityManagerConnectionFlow = Http().outgoingConnection(identityManagerHost, identityManagerPort).flow
   private val tokenManagerConnectionFlow = Http().outgoingConnection(tokenManagerHost, tokenManagerPort).flow

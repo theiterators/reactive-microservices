@@ -25,7 +25,7 @@ class Codes(tag: Tag) extends Table[Code](tag, "code") {
   override def * : ProvenShape[Code] = (userIdentifier, cardIndex, codeIndex, code, createdAt, activatedAt, usedAt) <> (Code.tupled, Code.unapply)
 }
 
-class Repository extends AuthCodeCardConfig {
+class Repository extends Config {
   def useCode(userIdentifier: String, cardIdx: Long, codeIdx: Long, code: String): Int = {
     blocking {
       db.withSession { implicit s =>

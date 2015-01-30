@@ -17,14 +17,14 @@ case class GetCodeCardResponse(userIdentifier: String, codesCard: CodeCard)
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object AuthCodeCardCard extends App with AuthCodeCardJsonProtocols with AuthCodeCardConfig {
+object AuthCodeCardCard extends App with JsonProtocols with Config {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val repository = new Repository
   val gateway = new Gateway
-  val service = new AuthCodeCardService(gateway, repository)
+  val service = new Service(gateway, repository)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("auth-codecard") {

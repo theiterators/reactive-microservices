@@ -17,7 +17,7 @@ case class InternalLoginRequest(identityId: Long, authMethod: String = "fb")
 case class InternalReloginRequest(tokenValue: String, authMethod: String = "fb")
 
 class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer, ec: ExecutionContext)
-  extends AuthFbJsonProtocols with AuthFbConfig {
+  extends JsonProtocols with Config {
 
   private val identityManagerConnectionFlow = Http().outgoingConnection(identityManagerHost, identityManagerPort).flow
   private val tokenManagerConnectionFlow = Http().outgoingConnection(tokenManagerHost, tokenManagerPort).flow

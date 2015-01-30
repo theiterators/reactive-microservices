@@ -10,13 +10,13 @@ case class LoginRequest(identityId: Long, authMethod: String)
 case class ReloginRequest(tokenValue: String, authMethod: String)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object TokenManager extends App with TokenManagerJsonProtocols with TokenManagerConfig {
+object TokenManager extends App with JsonProtocols with Config {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val repository = new Repository
-  val service = new TokenManagerService(repository)
+  val service = new Service(repository)
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("token-manager") {

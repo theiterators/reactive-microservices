@@ -4,7 +4,7 @@ import redis.RedisClient
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class AuthFbService(gateway: Gateway)(implicit actorSystem: ActorSystem, ec: ExecutionContext) extends AuthFbConfig {
+class Service(gateway: Gateway)(implicit actorSystem: ActorSystem, ec: ExecutionContext) extends Config {
   def register(authResponse: AuthResponse, tokenValueOption: Option[String]): Try[Future[Either[String, Identity]]] = {
     gateway.getFbUserDetails(authResponse.accessToken).map { user =>
       redis.exists(userToRedisKey(user)).flatMap {
