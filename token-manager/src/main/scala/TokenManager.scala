@@ -20,8 +20,8 @@ object TokenManager extends App with JsonProtocols with Config {
 
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("token-manager") {
-      (pathPrefix("tokens") & pathEndOrSingleSlash) {
-        (post & entity(as[LoginRequest])) { loginRequest =>
+      pathPrefix("tokens") {
+        (post & entity(as[LoginRequest]) & pathEndOrSingleSlash) { loginRequest =>
           complete {
             service.login(loginRequest).map(token => ToResponseMarshallable(Created -> token))
           }
@@ -33,24 +33,25 @@ object TokenManager extends App with JsonProtocols with Config {
               case None => ToResponseMarshallable(NotFound -> "Token expired or not found")
             }
           }
-        }
-      } ~
-      (path(Segment) & pathEndOrSingleSlash) { tokenValue =>
-        get {
-          complete {
-            service.findAndRefreshToken(tokenValue).map {
-              case Some(token) => ToResponseMarshallable(OK -> token)
-              case None => ToResponseMarshallable(NotFound -> "Token expired or not found")
-            }
-          }
         } ~
-        delete {
-          complete {
-            service.logout(tokenValue)
-            OK
-          }
+        (path(Segment) & pathEndOrSingleSlash) { tokenValue =>
+          get {
+            complete {
+              service.findAndRefreshToken(tokenValue).map {
+                case Some(token) => ToResponseMarshallable(OK -> token)
+                case None => ToResponseMarshallable(NotFound -> "Token expired or not found")
+              }
+            }
+          } ~
+            delete {
+              complete {
+                service.logout(tokenValue)
+                OK
+              }
+            }
         }
       }
     }
   }
 }
+
