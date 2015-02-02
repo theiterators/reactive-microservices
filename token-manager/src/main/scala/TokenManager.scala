@@ -23,23 +23,23 @@ object TokenManager extends App with JsonProtocols with Config {
       pathPrefix("tokens") {
         (post & entity(as[LoginRequest]) & pathEndOrSingleSlash) { loginRequest =>
           complete {
-            service.login(loginRequest).map(token => ToResponseMarshallable(Created -> token))
+            service.login(loginRequest).map(token => Created -> token)
           }
         } ~
         (patch & entity(as[ReloginRequest])) { reloginRequest =>
           complete {
-            service.relogin(reloginRequest).map {
-              case Some(token) => ToResponseMarshallable(OK -> token)
-              case None => ToResponseMarshallable(NotFound -> "Token expired or not found")
+            service.relogin(reloginRequest).map[ToResponseMarshallable] {
+              case Some(token) => OK -> token
+              case None => NotFound -> "Token expired or not found"
             }
           }
         } ~
         (path(Segment) & pathEndOrSingleSlash) { tokenValue =>
           get {
             complete {
-              service.findAndRefreshToken(tokenValue).map {
-                case Some(token) => ToResponseMarshallable(OK -> token)
-                case None => ToResponseMarshallable(NotFound -> "Token expired or not found")
+              service.findAndRefreshToken(tokenValue).map[ToResponseMarshallable] {
+                case Some(token) => OK -> token
+                case None => NotFound -> "Token expired or not found"
               }
             }
           } ~

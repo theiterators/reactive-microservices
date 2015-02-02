@@ -30,33 +30,33 @@ object AuthCodeCardCard extends App with JsonProtocols with Config {
     logRequestResult("auth-codecard") {
       (path("register" / "codecard" ) & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
         complete {
-          service.register(tokenValue).map {
-            case Right(response) => ToResponseMarshallable(Created -> response)
-            case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+          service.register(tokenValue).map[ToResponseMarshallable] {
+            case Right(response) => Created -> response
+            case Left(errorMessage) => BadRequest -> errorMessage
           }
         }
       } ~
       (path("login" / "codecard" / "activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
         complete {
-          service.activateCode(request).map {
-            case Right(response) => ToResponseMarshallable(OK -> response)
-            case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+          service.activateCode(request).map[ToResponseMarshallable] {
+            case Right(response) => OK -> response
+            case Left(errorMessage) => BadRequest -> errorMessage
           }
         }
       } ~
       (path("login" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
         complete {
-          service.login(request, tokenValue).map {
-            case Right(response) => ToResponseMarshallable(Created -> response)
-            case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+          service.login(request, tokenValue).map[ToResponseMarshallable] {
+            case Right(response) => Created -> response
+            case Left(errorMessage) => BadRequest -> errorMessage
           }
         }
       } ~
       (path("generate" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
         complete {
-          service.getCodeCard(request, tokenValue).map {
-            case Right(response) => ToResponseMarshallable(OK -> response)
-            case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+          service.getCodeCard(request, tokenValue).map[ToResponseMarshallable] {
+            case Right(response) => OK -> response
+            case Left(errorMessage) => BadRequest -> errorMessage
           }
         }
       }

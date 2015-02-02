@@ -26,9 +26,9 @@ object AuthFb extends App with JsonProtocols with Config {
       (path("register" / "fb") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
         complete {
           service.register(authResponse, tokenValue) match {
-            case SuccessT(f) => f.map {
-              case Right(identity) => ToResponseMarshallable(Created -> identity)
-              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            case SuccessT(f) => f.map[ToResponseMarshallable] {
+              case Right(identity) => Created -> identity
+              case Left(errorMessage) => BadRequest -> errorMessage
             }
             case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
             case _ => InternalServerError
@@ -38,9 +38,9 @@ object AuthFb extends App with JsonProtocols with Config {
       (path("login" / "fb") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
         complete {
           service.login(authResponse, tokenValue) match {
-            case SuccessT(f) => f.map {
-              case Right(token) => ToResponseMarshallable(Created -> token)
-              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            case SuccessT(f) => f.map[ToResponseMarshallable] {
+              case Right(token) => Created -> token
+              case Left(errorMessage) => BadRequest -> errorMessage
             }
             case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
             case _ => InternalServerError

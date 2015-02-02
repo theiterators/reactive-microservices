@@ -28,9 +28,9 @@ object AuthPassword extends App with JsonProtocols with Config {
         (pathEndOrSingleSlash & post & entity(as[PasswordRegisterRequest]) & optionalHeaderValueByName("Auth-Token")) {
           (request, tokenValue) =>
           complete {
-            service.register(request, tokenValue).map {
-              case Right(identity) => ToResponseMarshallable(Created -> identity)
-              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            service.register(request, tokenValue).map[ToResponseMarshallable] {
+              case Right(identity) => Created -> identity
+              case Left(errorMessage) => BadRequest -> errorMessage
             }
           }
         }
@@ -39,9 +39,9 @@ object AuthPassword extends App with JsonProtocols with Config {
         (pathEndOrSingleSlash & post & entity(as[PasswordLoginRequest]) & optionalHeaderValueByName("Auth-Token")) {
         (request, tokenValue) =>
           complete {
-            service.login(request, tokenValue).map {
-              case Right(token) => ToResponseMarshallable(Created -> token)
-              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            service.login(request, tokenValue).map[ToResponseMarshallable] {
+              case Right(token) => Created -> token
+              case Left(errorMessage) => BadRequest -> errorMessage
             }
           }
         }
@@ -50,9 +50,9 @@ object AuthPassword extends App with JsonProtocols with Config {
         (pathEndOrSingleSlash & post & entity(as[PasswordResetRequest]) & headerValueByName("Auth-Token")) {
           (request, tokenValue) =>
           complete {
-            service.reset(request, tokenValue).map {
-              case Right(identity) => ToResponseMarshallable(OK -> identity)
-              case Left(errorMessage) => ToResponseMarshallable(BadRequest -> errorMessage)
+            service.reset(request, tokenValue).map[ToResponseMarshallable] {
+              case Right(identity) => OK -> identity
+              case Left(errorMessage) => BadRequest -> errorMessage
             }
           }
         }
