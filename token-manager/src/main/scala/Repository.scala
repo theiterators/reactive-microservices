@@ -4,7 +4,7 @@ import reactivemongo.bson.{Macros, BSONDocument}
 import reactivemongo.core.nodeset.Authenticate
 import scala.concurrent.{ExecutionContext, Future}
 
-class Repository(implicit ec: ExecutionContext) extends TokenManagerConfig {
+class Repository(implicit ec: ExecutionContext) extends Config {
   def insertToken(token: Token): Future[Token] = tokens.insert(token).map(_ => token)
 
   def updateTokenByValue(value: String, token: Token): Future[Int] = tokens.update(BSONDocument("value" -> value), token).map(_.updated)

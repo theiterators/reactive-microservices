@@ -31,7 +31,7 @@ class AuthEntries(tag: Tag) extends Table[AuthEntry](tag, "auth_entry") {
   override def * : ProvenShape[AuthEntry] = (id.?, identityId, createdAt, email, password) <> (AuthEntry.tupled, AuthEntry.unapply)
 }
 
-class Repository extends AuthPasswordConfig {
+class Repository extends Config {
   def createAuthEntry(entry: AuthEntry) = {
     blocking {
       db.withSession { implicit session =>

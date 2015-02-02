@@ -1,6 +1,6 @@
 import com.typesafe.config.ConfigFactory
 
-trait AuthFbConfig {
+trait Config {
   protected val config = ConfigFactory.load()
   protected val interface = config.getString("http.interface")
   protected val port = config.getInt("http.port")

@@ -1,7 +1,7 @@
 import java.security.SecureRandom
 import scala.concurrent.{Future, ExecutionContext}
 
-class AuthCodeCardService(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) extends AuthCodeCardConfig {
+class Service(gateway: Gateway, repository: Repository)(implicit ec: ExecutionContext) extends Config {
   def register(tokenValueOption: Option[String]): Future[Either[String, RegisterResponse]] =
     acquireIdentity(tokenValueOption).map {
       case Right(identity) =>
