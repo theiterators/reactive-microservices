@@ -25,21 +25,21 @@ trait IdentityManagerJsonProtocols extends DefaultJsonProtocol {
 }
 
 object IdentityManager extends App with IdentityManagerJsonProtocols {
-  private val config = ConfigFactory.load()
-  private val interface = config.getString("http.interface")
-  private val port = config.getInt("http.port")
-  private val dbUrl = config.getString("db.url")
-  private val dbUser = config.getString("db.user")
-  private val dbPassword = config.getString("db.password")
+  val config = ConfigFactory.load()
+  val interface = config.getString("http.interface")
+  val port = config.getInt("http.port")
+  val dbUrl = config.getString("db.url")
+  val dbUser = config.getString("db.user")
+  val dbPassword = config.getString("db.password")
 
-  private implicit val actorSystem = ActorSystem()
-  private implicit val materializer = FlowMaterializer()
-  private implicit val dispatcher = actorSystem.dispatcher
+  implicit val actorSystem = ActorSystem()
+  implicit val materializer = FlowMaterializer()
+  implicit val dispatcher = actorSystem.dispatcher
 
-  private val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
-  private val identities = TableQuery[Identities]
+  val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
+  val identities = TableQuery[Identities]
 
-  private def getAllIdentities(): List[Identity] = {
+  def getAllIdentities(): List[Identity] = {
     blocking {
       db.withSession { implicit s =>
         identities.list
@@ -47,7 +47,7 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
     }
   }
 
-  private def saveIdentity(identity: Identity): Identity = {
+  def saveIdentity(identity: Identity): Identity = {
     blocking {
       db.withSession { implicit s =>
         identities returning identities.map(_.id) into ((_, id) => identity.copy(id = Option(id))) += identity
