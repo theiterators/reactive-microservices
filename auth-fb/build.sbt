@@ -11,7 +11,6 @@ resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
 libraryDependencies ++= {
   val akkaV = "2.3.9"
   val akkaStreamV = "1.0-M2"
-  val sprayJsonV = "1.3.1"
   val rediscalaV = "1.4.0"
   val restFbV = "1.7.0"
   Seq(
