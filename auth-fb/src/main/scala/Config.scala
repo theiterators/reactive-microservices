@@ -9,8 +9,6 @@ trait Config {
   protected val redisPassword = config.getString("redis.password")
   protected val redisDb = config.getInt("redis.db")
 
-  protected val fbAppSecret = config.getString("fb.appSecret")
-
   protected val identityManagerHost = config.getString("services.identity-manager.host")
   protected val identityManagerPort = config.getInt("services.identity-manager.port")
   protected val tokenManagerHost = config.getString("services.token-manager.host")

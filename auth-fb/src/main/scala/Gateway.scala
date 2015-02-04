@@ -72,7 +72,7 @@ class Gateway(implicit actorSystem: ActorSystem, materializer: FlowMaterializer,
   def getFbUserDetails(accessToken: String): Try[User] = {
     Try {
       blocking {
-        val client = new DefaultFacebookClient(accessToken, fbAppSecret)
+        val client = new DefaultFacebookClient(accessToken)
         client.fetchObject("me", classOf[User])
       }
     }

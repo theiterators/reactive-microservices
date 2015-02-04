@@ -8,7 +8,7 @@ import akka.stream.FlowMaterializer
 import com.restfb.exception.FacebookException
 import scala.util.{Failure => FailureT, Success => SuccessT}
 
-case class AuthResponse(accessToken: String, expiresIn: Long, signedRequest: String, userID: String)
+case class AuthResponse(accessToken: String)
 
 case class Identity(id: Long)
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
