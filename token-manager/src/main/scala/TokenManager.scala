@@ -7,7 +7,9 @@ import akka.http.server.Directives._
 import akka.stream.FlowMaterializer
 
 case class LoginRequest(identityId: Long, authMethod: String)
+
 case class ReloginRequest(tokenValue: String, authMethod: String)
+
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
 object TokenManager extends App with JsonProtocols with Config {
@@ -21,12 +23,12 @@ object TokenManager extends App with JsonProtocols with Config {
   Http().bind(interface = interface, port = port).startHandlingWith {
     logRequestResult("token-manager") {
       pathPrefix("tokens") {
-        (post & entity(as[LoginRequest]) & pathEndOrSingleSlash) { loginRequest =>
+        (post & pathEndOrSingleSlash & entity(as[LoginRequest])) { loginRequest =>
           complete {
             service.login(loginRequest).map(token => Created -> token)
           }
         } ~
-        (patch & entity(as[ReloginRequest])) { reloginRequest =>
+        (patch & pathEndOrSingleSlash & entity(as[ReloginRequest])) { reloginRequest =>
           complete {
             service.relogin(reloginRequest).map[ToResponseMarshallable] {
               case Some(token) => OK -> token
@@ -43,12 +45,12 @@ object TokenManager extends App with JsonProtocols with Config {
               }
             }
           } ~
-            delete {
-              complete {
-                service.logout(tokenValue)
-                OK
-              }
+          delete {
+            complete {
+              service.logout(tokenValue)
+              OK
             }
+          }
         }
       }
     }
