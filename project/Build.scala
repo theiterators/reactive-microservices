@@ -9,6 +9,6 @@ object Root extends Build {
   lazy val authFb = Project(id = "auth-fb", base = file("auth-fb"))
   lazy val authCodeCard = Project(id = "auth-codecard", base = file("auth-codecard"))
   lazy val btcCommon = Project(id = "btc-common", base = file("btc-common"))
-  lazy val btcWs = Project(id = "btc-ws", base = file("btc-ws")).enablePlugins(PlayScala).dependsOn(btcCommon)
+  lazy val btcWs = Project(id = "btc-ws", base = file("btc-ws")).dependsOn(btcCommon).enablePlugins(PlayScala)
   lazy val btcUsers = Project(id = "btc-users", base = file("btc-users")).dependsOn(btcCommon)
 }

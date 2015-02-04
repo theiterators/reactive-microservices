@@ -6,7 +6,7 @@ scalaVersion := "2.11.5"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
-lazy val `btc-ws` = (project in file(".")).enablePlugins(PlayScala)
+lazy val `btc-ws` = (project in file(".")).enablePlugins(PlayScala).dependsOn(btcCommon)
 
 libraryDependencies ++= {
   Seq(
