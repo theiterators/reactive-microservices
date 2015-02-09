@@ -26,6 +26,8 @@ object UserMessages {
   case class SubscribeVolumeBelow(override val id: Long, override val threshold: BigDecimal) extends ThresholdSubscription
 
   case class Unsubscribe(override val id: Long) extends Command
+
+  case object QuerySubscriptions
 }
 
 object WsMessages {

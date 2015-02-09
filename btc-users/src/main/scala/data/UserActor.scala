@@ -1,13 +1,12 @@
 package data
 
-import akka.actor.{PoisonPill, ActorRef, ActorLogging, Props}
+import akka.actor.{ActorLogging, ActorRef, PoisonPill, Props}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-import akka.io.Tcp.SO.KeepAlive
 import akka.persistence.PersistentActor
+import btc.common.UserMessages._
+import btc.common.WsMessages.{Alarm, AllSubscriptions}
 import data.UserActor.UserId
-import data.UsersManager.UserId
-import domain.{SubscriptionId, Threshold}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -18,28 +17,39 @@ trait UserActorConfig {
 }
 
 object UserActor {
-  def props(id: UserId, config: UserActorConfig, WSActor: ActorRef) = Props(new UserActor(id, config, WSActor)
+  def props(id: UserId, config: UserActorConfig, WSActor: ActorRef) = Props(new UserActor(id, config, WSActor))
   case object KeepAlive
 
-  case class ProcessData(data: DataPack) extends Command
+  case class ProcessData(data: DataPack)
+
+  type UserId = Long
+  type SubscriptionId = Long
+  type Threshold = BigDecimal
 
   trait Event
-  case class SubscribeEvt(id: SubscriptionId, subscription: Subscription) extends Event
+  case class SubscribeEvt(id: SubscriptionId, subscription: Subscription with Evaluable) extends Event
   case class UnSubscribeEvt(id: SubscriptionId) extends Event
 
-  abstract class Subscription(threshold : Threshold) extends Serializable { def evaluate(data: DataPack): Boolean }
-  case class BidOverSubscription(threshold : Threshold) extends Subscription(threshold)
-    { override def evaluate(data: DataPack): Boolean =  data.bid > threshold }
+  sealed trait Evaluable {
+    def evaluate(data: DataPack): EvaluationResult
+  }
 
-  case class AskBelowSubscription(threshold : Threshold) extends Subscription(threshold)
-    { override def evaluate(data: DataPack): Boolean = data.ask < threshold }
+  sealed trait Thresholdable {
+    val threshold: Threshold
+  }
 
-  case class VolumeOverSubscription(threshold : Threshold) extends Subscription(threshold)
-    { override def evaluate(data: DataPack): Boolean = data.volume > threshold }
+  case class EvaluationResult(active: Boolean, value: BigDecimal)
 
-  case class VolumeBelowSubscription(threshold : Threshold) extends Subscription(threshold)
-    { override def evaluate(data: DataPack): Boolean = data.volume < threshold }
-
+  trait RateChangeEvaluable extends Evaluable
+    { override def evaluate(data: DataPack): EvaluationResult = EvaluationResult(true, data.last) }
+  trait BidOverEvaluable extends Evaluable with Thresholdable
+    { override def evaluate(data: DataPack): EvaluationResult = EvaluationResult(data.bid > threshold, data.bid) }
+  trait AskBelowEvaluable extends Evaluable with Thresholdable
+    { override def evaluate(data: DataPack): EvaluationResult = EvaluationResult(data.ask < threshold, data.ask) }
+  trait VolumeOverEvaluable extends Evaluable with Thresholdable
+    { override def evaluate(data: DataPack): EvaluationResult = EvaluationResult(data.volume > threshold, data.volume) }
+  trait VolumeBelowEvaluable extends Evaluable with Thresholdable
+    { override def evaluate(data: DataPack): EvaluationResult = EvaluationResult(data.volume < threshold, data.volume) }
 }
 
 class UserActor(id: UserId, config: UserActorConfig, WSActor: ActorRef) extends PersistentActor with ActorLogging {
@@ -47,7 +57,7 @@ class UserActor(id: UserId, config: UserActorConfig, WSActor: ActorRef) extends 
 
   override def persistenceId: String = id.toString
 
-  val subscriptions = mutable.Map.empty[SubscriptionId, Subscription]
+  val subscriptions = mutable.Map.empty[SubscriptionId, Subscription with Evaluable]
 
   private val topic = config.topic
 
@@ -73,14 +83,17 @@ class UserActor(id: UserId, config: UserActorConfig, WSActor: ActorRef) extends 
 
     case HeartBeat => handleHeartBeat()
 
+    case QuerySubscriptions => sendAllSubscriptions()
+
     case pd: ProcessData => handleProcessData(pd)
 
-    case SubscribeBidOver(ids, thr) => handleEvent(SubscribeEvt(ids, BidOverSubscription(thr)))
-    case SubscribeAskBelow(ids, thr) => handleEvent(SubscribeEvt(ids, AskBelowSubscription(thr)))
-    case SubscribeVolumeOver(ids, thr) => handleEvent(SubscribeEvt(ids, VolumeOverSubscription(thr)))
-    case SubscribeVolumeBelow(ids, thr) => handleEvent(SubscribeEvt(ids, VolumeBelowSubscription(thr)))
+    case sub: SubscribeRateChange => handleEvent(SubscribeEvt(sub.id, new SubscribeRateChange(sub.id) with RateChangeEvaluable))
+    case sub: SubscribeBidOver => handleEvent(SubscribeEvt(sub.id, new SubscribeBidOver(sub.id, sub.threshold) with BidOverEvaluable))
+    case sub: SubscribeAskBelow => handleEvent(SubscribeEvt(sub.id, new SubscribeAskBelow(sub.id, sub.threshold) with AskBelowEvaluable))
+    case sub: SubscribeVolumeOver => handleEvent(SubscribeEvt(sub.id, new SubscribeVolumeOver(sub.id, sub.threshold) with VolumeOverEvaluable))
+    case sub: SubscribeVolumeBelow => handleEvent(SubscribeEvt(sub.id, new SubscribeVolumeBelow(sub.id, sub.threshold) with VolumeBelowEvaluable))
 
-    case UnSubscribe(ids) => handleEvent(UnSubscribeEvt(ids))
+    case Unsubscribe(ids) => handleEvent(UnSubscribeEvt(ids))
   }
 
   private def updateState(event: SubscribeEvt): Unit = {log.info(s"New subscription: $event"); subscriptions.put(event.id, event.subscription)}
@@ -92,11 +105,14 @@ class UserActor(id: UserId, config: UserActorConfig, WSActor: ActorRef) extends 
   private def handleEvent(event: UnSubscribeEvt) = persist(event)(updateState)
 
   private def handleProcessData(pd: ProcessData) = {
-    //log.info(s"New data in Subscriber ${pd.data}")
-    subscriptions.foreach { case(ids, sub) =>
-      log.info(s"Evaluating: $ids, $sub")
-      if (sub.evaluate(pd.data)) WSActor ! Alarm(ids)
+
+    def evaluateSubscription[T <: Subscription with Evaluable](subscription: T): Unit = {
+      log.info(s"Evaluating: $subscription")
+      val result = subscription.evaluate(pd.data)
+      if (result.active) WSActor ! Alarm(subscription.id, result.value)
     }
+
+    subscriptions.foreach { case(ids, sub) => evaluateSubscription(sub) }
   }
 
   private def handleHeartBeat() = {log.info("Heartbeat!"); lastHeartBeatTime = System.currentTimeMillis()}
@@ -104,4 +120,9 @@ class UserActor(id: UserId, config: UserActorConfig, WSActor: ActorRef) extends 
   private def handleKeepAlive() = {log.info("KeepAlive!"); if (System.currentTimeMillis() - lastHeartBeatTime > config.seppukuTimeout.toMillis) commitSeppuku()}
 
   private def commitSeppuku() = {log.info("Seppuku time!"); self ! PoisonPill}
+
+  private def sendAllSubscriptions() = {
+    log.info("Sending all subscriptions")
+    WSActor ! AllSubscriptions(subscriptions.values.toSeq)
+  }
 }

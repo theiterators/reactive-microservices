@@ -1,6 +1,7 @@
 package data
 
 import akka.actor.{Actor, ActorLogging, Props}
+import btc.common.WsMessages.InitActorResponse
 import data.UsersManager.LookupUser
 
 trait UsersManagerConfig {
@@ -8,14 +9,11 @@ trait UsersManagerConfig {
 }
 
 object UsersManager {
-  type UserId = Long
-
-  case class LookupUser(id: UserId)
+  case class LookupUser(id: Long)
 
   def props(config: UsersManagerConfig) = Props(new UsersManager(config))
 }
 
-// ma utworzyc uzytkonika jesli on nie istnieje, a jesli istnieje to zwrocic do niego actor refa
 class UsersManager(config: UsersManagerConfig) extends Actor with ActorLogging {
 
   override def receive: Receive = {
@@ -33,6 +31,7 @@ class UsersManager(config: UsersManagerConfig) extends Actor with ActorLogging {
         log.info(s"Creating new user with id: ${lu.id}!")
         context.actorOf(UserActor.props(lu.id, config.userConfig, sender()), id)
     }
-    sender() ! WSMock.InitActorResponse(userActor)
+
+    sender() ! InitActorResponse(userActor)
   }
 }
