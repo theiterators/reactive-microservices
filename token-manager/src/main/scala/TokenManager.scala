@@ -5,6 +5,8 @@ import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.stream.FlowMaterializer
+import metrics.common.{Value, RequestResponseStats, Counter, Metrics}
+import metrics.common.MetricsDirectives._
 
 case class LoginRequest(identityId: Long, authMethod: String)
 
@@ -12,7 +14,7 @@ case class ReloginRequest(tokenValue: String, authMethod: String)
 
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
-object TokenManager extends App with JsonProtocols with Config {
+object TokenManager extends App with JsonProtocols with Config with Metrics {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = FlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
@@ -20,19 +22,29 @@ object TokenManager extends App with JsonProtocols with Config {
   val repository = new Repository
   val service = new Service(repository)
 
+  def putMetricForRequestResponse(requestStats: RequestResponseStats): Unit = {
+    val method = requestStats.request.method.name.toLowerCase
+    putMetric(Value(s"token-manager.$method.time", requestStats.time))
+  }
+
   Http().bind(interface = interface, port = port).startHandlingWith {
-    logRequestResult("token-manager") {
+    (measureRequestResponse(putMetricForRequestResponse) & logRequestResult("token-manager")) {
       pathPrefix("tokens") {
         (post & pathEndOrSingleSlash & entity(as[LoginRequest])) { loginRequest =>
           complete {
+            putMetric(Counter("token-manager.post", 1))
             service.login(loginRequest).map(token => Created -> token)
           }
         } ~
         (patch & pathEndOrSingleSlash & entity(as[ReloginRequest])) { reloginRequest =>
           complete {
             service.relogin(reloginRequest).map[ToResponseMarshallable] {
-              case Some(token) => OK -> token
-              case None => NotFound -> "Token expired or not found"
+              case Some(token) =>
+                putMetric(Counter("token-manager.patch", 1))
+                OK -> token
+              case None =>
+                putMetric(Counter("token-manager.patch", -1))
+                NotFound -> "Token expired or not found"
             }
           }
         } ~
@@ -40,14 +52,19 @@ object TokenManager extends App with JsonProtocols with Config {
           get {
             complete {
               service.findAndRefreshToken(tokenValue).map[ToResponseMarshallable] {
-                case Some(token) => OK -> token
-                case None => NotFound -> "Token expired or not found"
+                case Some(token) =>
+                  putMetric(Counter("token-manager.get", 1))
+                  OK -> token
+                case None =>
+                  putMetric(Counter("token-manager.get", -1))
+                  NotFound -> "Token expired or not found"
               }
             }
           } ~
           delete {
             complete {
               service.logout(tokenValue)
+              putMetric(Counter("token-manager.delete", 1))
               OK
             }
           }
