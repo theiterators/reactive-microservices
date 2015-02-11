@@ -1,0 +1,112 @@
+package global
+
+import akka.actor.{PoisonPill, Props}
+import akka.http.Http
+import akka.http.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.model.StatusCodes.OK
+import akka.http.model.{HttpRequest, HttpResponse}
+import akka.http.unmarshalling.Unmarshal
+import akka.routing.{RemoveRoutee, NoRoutee, AddRoutee, BroadcastGroup}
+import akka.stream.FlowMaterializer
+import akka.stream.actor.ActorSubscriberMessage.{OnComplete, OnNext}
+import akka.stream.actor.{ActorSubscriber, RequestStrategy, WatermarkRequestStrategy}
+import akka.stream.scaladsl._
+import metrics.common.{Value, Counter, Metric}
+import play.api._
+import play.api.libs.concurrent.Akka
+import reactivemongo.api.MongoDriver
+import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.bson.Macros
+import reactivemongo.core.nodeset.Authenticate
+
+import scala.collection.immutable.Seq
+import scala.concurrent.Future
+
+object FlowInitializer extends GlobalSettings {
+  override def onStart(a: Application): Unit = {
+    implicit val app = a
+    implicit val actorSystem = Akka.system
+    implicit val materializer = FlowMaterializer()
+    implicit val dispatcher = actorSystem.dispatcher
+
+    val interface = app.configuration.getString("metrics-collector.interface").get
+    val port = app.configuration.getInt("metrics-collector.port").get
+
+    val in = UndefinedSource[HttpRequest]
+    val out = UndefinedSink[HttpResponse]
+
+    val requestFlow = PartialFlowGraph { implicit b =>
+      import akka.stream.scaladsl.FlowGraphImplicits._
+
+      val wsSubscriber = Sink[Metric](ActorsWs.props)
+      val journalerSubscriber = Sink[Metric](ActorJournaler.props(app.configuration))
+
+      val requestResponseFlow = Flow[HttpRequest].map(_ => HttpResponse(OK))
+      val requestMetricFlow = Flow[HttpRequest].mapAsync { request =>
+        Unmarshal(request.entity).to[Metric].map(Seq(_)).fallbackTo(Future.successful(Seq.empty[Metric]))
+      }.mapConcat(identity)
+
+      val broadcastRequest = Broadcast[HttpRequest]
+      val broadcastMetric = Broadcast[Metric]
+
+      in ~> broadcastRequest ~> requestResponseFlow ~> out
+            broadcastRequest ~> requestMetricFlow ~> broadcastMetric ~> wsSubscriber
+                                                     broadcastMetric ~> journalerSubscriber
+
+    }.toFlow(in, out)
+
+    Http().bind(interface = interface, port = port).startHandlingWith(requestFlow)
+
+    val router = actorSystem.actorOf(BroadcastGroup(List.empty[String]).props(), RouterName)
+    router ! AddRoutee(NoRoutee) // prevents router from terminating when last websocket disconnects
+  }
+
+  override def onStop(a: Application): Unit = {
+    val router = Akka.system(a).actorOf(BroadcastGroup(List.empty[String]).props(), RouterName)
+    router ! RemoveRoutee(NoRoutee)
+    router ! PoisonPill
+  }
+
+  private val RouterName = "BroadcastRouter"
+  val RouterPath = s"/user/$RouterName"
+}
+
+class ActorsWs extends ActorSubscriber {
+  override protected def requestStrategy: RequestStrategy = new WatermarkRequestStrategy(1024)
+
+  override def receive: Receive = {
+    case OnNext(m: Metric) => router ! m
+    case OnComplete => self ! PoisonPill
+  }
+
+  private val router = context.system.actorSelection(FlowInitializer.RouterPath)
+}
+
+object ActorsWs {
+  def props: Props = Props(new ActorsWs)
+}
+
+class ActorJournaler(configuration: Configuration) extends ActorSubscriber {
+  private val mongoHost = configuration.getString("mongo.host").get
+  private val mongoDb = configuration.getString("mongo.db").get
+  private val mongoUser = configuration.getString("mongo.user").get
+  private val mongoPassword = configuration.getString("mongo.password").get
+  private implicit val dispatcher = context.dispatcher
+  private val mongoConnection = (new MongoDriver).connection(nodes = List(mongoHost), authentications = List(Authenticate(mongoDb, mongoUser, mongoPassword)))
+  private val mongoDatabase = mongoConnection(mongoDb)
+  private val metrics: BSONCollection = mongoDatabase("metrics")
+  implicit val counterMongoHandler = Macros.handler[Counter]
+  implicit val valueMongoHandler = Macros.handler[Value]
+
+  override protected def requestStrategy: RequestStrategy = new WatermarkRequestStrategy(1024)
+
+  override def receive: Receive = {
+    case OnNext(c: Counter) => metrics.insert(c)
+    case OnNext(v: Value) => metrics.insert(v)
+    case OnComplete => self ! PoisonPill
+  }
+}
+
+object ActorJournaler {
+  def props(configuration: Configuration): Props = Props(new ActorJournaler(configuration))
+}

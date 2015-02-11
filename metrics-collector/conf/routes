@@ -1,0 +1,1 @@
+GET     /metrics    controllers.MetricsCollector.index()
