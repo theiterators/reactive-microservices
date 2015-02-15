@@ -9,7 +9,10 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 lazy val `btc-ws` = (project in file(".")).enablePlugins(PlayScala).dependsOn(btcCommon)
 
 libraryDependencies ++= {
+  val akkaV = "2.3.9"
   Seq(
-    ws
+    ws,
+    "com.typesafe.akka" %% "akka-actor" % akkaV,
+    "com.typesafe.akka" %% "akka-remote" % akkaV
   )
 }

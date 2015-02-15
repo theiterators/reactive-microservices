@@ -1,36 +1,22 @@
-import akka.actor.{PoisonPill, ActorSystem, Props}
-import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSingletonManager}
+import akka.actor._
+import akka.routing.{NoRoutee, AddRoutee, BroadcastGroup}
 import com.typesafe.config.ConfigFactory
-import data._
 import scala.concurrent.duration._
 
 object Main extends App {
   val config = ConfigFactory.load()
 
-  implicit val system = ActorSystem(config.getString("application.cluster.name"), config)
+  val applicationName = config.getString("application.name")
+  val dataFetcherInterval = config.getLong("data-fetcher.interval").millis
+  val keepAliveTimeout = config.getLong("user-handler.timeout").millis
 
-  val configDB = new DataBroadcasterConfig {
-    override val topic: String = config.getString("application.cluster.topic")
-  }
+  implicit val system = ActorSystem(applicationName, config)
 
-  system.actorOf(ClusterSingletonManager.props(
-    singletonProps = DataBroadcaster.props(configDB),
-    singletonName = "broadcaster",
-    terminationMessage = PoisonPill,
-    role = None),
-    name = "singleton")
+  val broadcaster = system.actorOf(BroadcastGroup(List()).props())
+  broadcaster ! AddRoutee(NoRoutee)
 
-  val configUA = new UserActorConfig {
-    override val seppukuTimeout: FiniteDuration = FiniteDuration(10000, MILLISECONDS)
+  val dataFetcher = system.actorOf(DataFetcher.props(broadcaster))
+  system.scheduler.schedule(dataFetcherInterval, dataFetcherInterval, dataFetcher, DataFetcher.Tick)(system.dispatcher)
 
-    override val topic: String = config.getString("application.cluster.topic")
-  }
-
-  val configUM = new UsersManagerConfig {
-    override val userConfig: UserActorConfig = configUA
-  }
-
-  val manager = system.actorOf(UsersManager.props(configUM), "users-manager")
-
-  ClusterReceptionistExtension(system).registerService(manager)
+  val manager = system.actorOf(UsersManager.props(broadcaster, keepAliveTimeout), "users-manager")
 }

@@ -1,14 +1,18 @@
 package controllers
 
-import akka.actor.{Props, Actor, ActorRef}
+import akka.actor._
+import btc.common.UserManagerMessages.LookupUser
+import btc.common.UserHandlerMessages._
+import btc.common.WebSocketHandlerMessages._
 import play.api.Play.current
+import play.api.libs.concurrent.Akka
 import play.api.libs.json._
 import play.api.libs.ws.WS
 import play.api.mvc.WebSocket.FrameFormatter
 import play.api.mvc._
 import play.api.libs.concurrent.Execution.Implicits._
-import btc.common.UserMessages._
-import btc.common.WsMessages._
+import scala.concurrent.duration._
+import WebSocketHandler._
 
 trait Formats {
   implicit val userEventFormat = new Format[Command] {
@@ -69,7 +73,8 @@ object BtcWs extends Controller with Formats {
     tokenManagerUrl(authToken).get().map { response =>
       if (response.status == OK) {
         val token = Json.parse(response.body).as[Token]
-        Right(WebSocketHandlerActor.props(token, _: ActorRef))
+        val usersManager = Akka.system.actorSelection(current.configuration.getString("services.btc-users.users-manager-path").get)
+        Right(WebSocketHandler.props(token, usersManager, webSocketHandlerTimeout, _: ActorRef))
       } else {
         Left(Unauthorized("Token expired or not found"))
       }
@@ -79,15 +84,71 @@ object BtcWs extends Controller with Formats {
   private def tokenManagerUrl(authToken: String) = WS.url(s"http://$tokenManagerHost:$tokenManagerPort/tokens/$authToken")
   private val tokenManagerHost = current.configuration.getString("services.token-manager.host").get
   private val tokenManagerPort = current.configuration.getInt("services.token-manager.port").get
+  private val webSocketHandlerTimeout = current.configuration.getLong("web-socket-handler.timeout").get.millis
 }
 
-object WebSocketHandlerActor {
-  def props(token: Token, out: ActorRef) = Props(new WebSocketHandlerActor(token, out))
-}
+object WebSocketHandler {
+  case object Timeout
+  case object KeepAlive
 
-class WebSocketHandlerActor(token: Token, out: ActorRef) extends Actor {
-  override def receive: Receive = {
-    case r: Command =>
-      out ! OperationSuccessful(10)
+  def props(token: Token, usersManager: ActorSelection, keepAliveTimeout: FiniteDuration, out: ActorRef) = {
+    Props(new WebSocketHandler(token, usersManager, keepAliveTimeout, out))
   }
+}
+
+class WebSocketHandler(token: Token, usersManager: ActorSelection, keepAliveTimeout: FiniteDuration, out: ActorRef) extends Actor with ActorLogging {
+  override def preStart(): Unit = requestHandlerWithTimeout()
+
+  override def receive: Receive = waitForHandler
+
+  private def waitForHandler: Receive = {
+    case InitActorResponse(handler: ActorRef) =>
+      log.info(s"Got handler for user ${token.identityId}")
+      handler ! QuerySubscriptions
+      context.become(waitForSubscriptions(handler))
+    case Timeout =>
+      log.warning(s"Timeout while waiting for handler for user ${token.identityId}, closing connection")
+      self ! PoisonPill
+  }
+
+  private def waitForSubscriptions(handler: ActorRef): Receive = {
+    case subs @ AllSubscriptions(subscriptions) =>
+      log.info(s"Got subscriptions $subscriptions for user ${token.identityId}")
+      out ! subs
+      scheduleHeartbeatAndKeepAlive(handler)
+      context.become(handleUser(handler, subscriptions))
+    case Timeout =>
+      log.warning(s"Timeout while waiting for subscriptions for user ${token.identityId}, closing connection")
+      self ! PoisonPill
+  }
+
+  private def handleUser(handler: ActorRef, subscriptions: Seq[Subscribe]): Receive = {
+    case command: Command =>
+      log.debug(s"Got command $command from user ${token.identityId}")
+      handler ! command
+    case event: MarketEvent =>
+      log.debug(s"Got market event $event for user ${token.identityId}")
+      out ! event
+    case Heartbeat =>
+      log.debug(s"Got heartbeat for user ${token.identityId}")
+      lastHeartBeat = System.currentTimeMillis()
+      scheduleHeartbeatAndKeepAlive(handler)
+    case KeepAlive if System.currentTimeMillis() - lastHeartBeat > keepAliveTimeout.toMillis =>
+      log.warning(s"Timeout while handling user ${token.identityId}, restarting")
+      requestHandlerWithTimeout()
+      context.become(waitForHandler, discardOld = true)
+  }
+
+  private def requestHandlerWithTimeout(): Unit = {
+    log.info(s"Requesting handler for user ${token.identityId}")
+    usersManager ! LookupUser(token.identityId)
+    context.system.scheduler.scheduleOnce(keepAliveTimeout, self, Timeout)
+  }
+
+  private def scheduleHeartbeatAndKeepAlive(handler: ActorRef): Unit = {
+    context.system.scheduler.scheduleOnce(keepAliveTimeout / 3, handler, Heartbeat)
+    context.system.scheduler.scheduleOnce(keepAliveTimeout, self, KeepAlive)
+  }
+
+  private var lastHeartBeat = System.currentTimeMillis()
 }
