@@ -1,56 +1,47 @@
 package controllers
 
-import akka.actor.{Props, Actor, ActorRef}
+import akka.actor._
+import btc.common.UserManagerMessages.LookupUser
+import btc.common.UserHandlerMessages._
+import btc.common.WebSocketHandlerMessages._
 import play.api.Play.current
+import play.api.libs.concurrent.Akka
 import play.api.libs.json._
 import play.api.libs.ws.WS
 import play.api.mvc.WebSocket.FrameFormatter
 import play.api.mvc._
 import play.api.libs.concurrent.Execution.Implicits._
+import scala.concurrent.duration._
+import WebSocketHandler._
 
 trait Formats {
-  implicit val subscribeThresholdWritesFormat = new Writes[SubscribeThreshold] {
-    override def writes(o: SubscribeThreshold): JsValue = Json.obj(
-      "id" -> o.id,
-      "threshold" -> o.threshold,
-      "operation" -> o.operation
-    )
-  }
-
-  implicit val subscribeChangeWritesFormat = new Writes[SubscribeChange] {
-    override def writes(o: SubscribeChange): JsValue = Json.obj(
-      "id" -> o.id,
-      "operation" -> o.operation
-    )
-  }
-
-  implicit val subscribeWritesFormat = new Writes[Subscribe] {
-    override def writes(o: Subscribe): JsValue = o match {
-      case o: SubscribeChange => subscribeChangeWritesFormat.writes(o)
-      case o: SubscribeThreshold => subscribeThresholdWritesFormat.writes(o)
+  implicit val userEventFormat = new Format[Command] {
+    override def writes(o: Command): JsValue = o match {
+      case SubscribeRateChange(id) => Json.obj("operation" -> "SubscribeRateChange", "id" -> id)
+      case SubscribeBidOver(id, threshold) => Json.obj("operation" -> "SubscribeBidOver", "id" -> id, "threshold" -> threshold)
+      case SubscribeAskBelow(id, threshold) => Json.obj("operation" -> "SubscribeAskBelow", "id" -> id, "threshold" -> threshold)
+      case SubscribeVolumeOver(id, threshold) => Json.obj("operation" -> "SubscribeVolumeOver", "id" -> id, "threshold" -> threshold)
+      case SubscribeVolumeBelow(id, threshold) => Json.obj("operation" -> "SubscribeVolumeBelow", "id" -> id, "threshold" -> threshold)
+      case Unsubscribe(id) => Json.obj("operation" -> "Unsubscribe", "id" -> id)
     }
-  }
 
-  implicit val userEventFormat = new Format[UserEvent] {
-    override def writes(o: UserEvent): JsValue = ??? // not needed because it's in type
-
-    override def reads(json: JsValue): JsResult[UserEvent] = {
-      val idOption = (json \ "id").asOpt[Long]
+    override def reads(json: JsValue): JsResult[Command] = {
+      val idOption = (json \ "id").asOpt[Int]
       val operationOption = (json \ "operation").asOpt[String]
       val thresholdOption = (json \ "threshold").asOpt[BigDecimal]
       (idOption, operationOption, thresholdOption) match {
         case (Some(id), Some(operation), Some(threshold)) =>
           operation match {
-            case SubscribeBidOver.Operation => JsSuccess(SubscribeBidOver(id, threshold))
-            case SubscribeAskBelow.Operation => JsSuccess(SubscribeAskBelow(id, threshold))
-            case SubscribeVolumeOver.Operation => JsSuccess(SubscribeVolumeOver(id, threshold))
-            case SubscribeVolumeBelow.Operation => JsSuccess(SubscribeVolumeBelow(id, threshold))
+            case "SubscribeBidOver" => JsSuccess(SubscribeBidOver(id, threshold))
+            case "SubscribeAskBelow" => JsSuccess(SubscribeAskBelow(id, threshold))
+            case "SubscribeVolumeOver" => JsSuccess(SubscribeVolumeOver(id, threshold))
+            case "SubscribeVolumeBelow" => JsSuccess(SubscribeVolumeBelow(id, threshold))
             case _ => JsError("Unknown operation")
           }
         case (Some(id), Some(operation), None) =>
           operation match {
-            case SubscribeRateChange.Operation => JsSuccess(SubscribeRateChange(id))
-            case Unsubscribe.Operation => JsSuccess(Unsubscribe(id))
+            case "SubscribeRateChange" => JsSuccess(SubscribeRateChange(id))
+            case "Unsubscribe" => JsSuccess(Unsubscribe(id))
             case _ => JsError("Unknown operation or missing 'threshold' field")
           }
         case _ => JsError("Missing fields 'id' and/or 'operation'")
@@ -58,17 +49,13 @@ trait Formats {
     }
   }
 
-  implicit val operationSuccessfulWritesFormat = Json.writes[OperationSuccessful]
-
-  implicit val alarmWritesFormat = Json.writes[Alarm]
-
-  implicit val allSubscriptionsWritesFormat = Json.writes[AllSubscriptions]
+  implicit val commandFrameFormatter = FrameFormatter.jsonFrame[Command]
 
   implicit val marketEventFormat = new Format[MarketEvent] {
     override def writes(o: MarketEvent): JsValue = o match {
-      case o: OperationSuccessful => operationSuccessfulWritesFormat.writes(o)
-      case o: Alarm => alarmWritesFormat.writes(o)
-      case o: AllSubscriptions => allSubscriptionsWritesFormat.writes(o)
+      case o: OperationSuccessful => Json.obj("operation" -> "OperationSuccessful", "id" -> o.id)
+      case o: Alarm => Json.obj("operation" -> "Alarm", "id" -> o.id, "value" -> o.value)
+      case o: AllSubscriptions => Json.obj("operation" -> "AllSubscriptions", "subscriptions" -> o.subscriptions)
     }
 
     override def reads(json: JsValue): JsResult[MarketEvent] = ??? // not needed because it's out type
@@ -76,58 +63,18 @@ trait Formats {
 
   implicit val marketEventFrameFormatter = FrameFormatter.jsonFrame[MarketEvent]
 
-  implicit val userEventFrameFormatter = FrameFormatter.jsonFrame[UserEvent]
-
   implicit val tokenReadsFormat = Json.reads[Token]
 }
-
-sealed trait UserEvent {
-  val id: Long
-  val operation: String
-}
-
-sealed trait Subscribe extends UserEvent
-
-sealed trait SubscribeChange extends Subscribe
-
-sealed trait SubscribeThreshold extends Subscribe {
-  val threshold: BigDecimal
-}
-
-case class SubscribeRateChange(override val id: Long) extends SubscribeChange { override val operation: String = SubscribeRateChange.Operation }
-object SubscribeRateChange { val Operation = "SubscribeRateChange" }
-
-case class SubscribeBidOver(override val id: Long, override val threshold : BigDecimal) extends SubscribeThreshold { override val operation: String = SubscribeBidOver.Operation }
-object SubscribeBidOver { val Operation = "SubscribeBidOver" }
-
-case class SubscribeAskBelow(override val id: Long, override val threshold : BigDecimal) extends SubscribeThreshold { override val operation: String = SubscribeAskBelow.Operation }
-object SubscribeAskBelow { val Operation = "SubscribeAskBelow" }
-
-case class SubscribeVolumeOver(override val id: Long, override val threshold: BigDecimal) extends SubscribeThreshold { override val operation: String = SubscribeVolumeOver.Operation }
-object SubscribeVolumeOver { val Operation = "SubscribeVolumeOver" }
-
-case class SubscribeVolumeBelow(override val id: Long, override val threshold: BigDecimal) extends SubscribeThreshold { override val operation: String = SubscribeVolumeBelow.Operation }
-object SubscribeVolumeBelow { val Operation = "SubscribeVolumeBelow" }
-
-case class Unsubscribe(override val id: Long) extends UserEvent { override val operation: String = Unsubscribe.Operation }
-object Unsubscribe { val Operation = "Unsubscribe" }
-
-sealed trait MarketEvent
-
-case class OperationSuccessful(id: Long) extends MarketEvent
-
-case class Alarm(id: Long, value: BigDecimal) extends MarketEvent
-
-case class AllSubscriptions(subscriptions: Seq[Subscribe]) extends MarketEvent
 
 case class Token(value: String, validTo: Long, identityId: Long, authMethods: Set[String])
 
 object BtcWs extends Controller with Formats {
-  def index(authToken: String) = WebSocket.tryAcceptWithActor[UserEvent, MarketEvent] { implicit request =>
+  def index(authToken: String) = WebSocket.tryAcceptWithActor[Command, MarketEvent] { implicit request =>
     tokenManagerUrl(authToken).get().map { response =>
       if (response.status == OK) {
         val token = Json.parse(response.body).as[Token]
-        Right(WebSocketHandlerActor.props(token, _: ActorRef))
+        val usersManager = Akka.system.actorSelection(current.configuration.getString("services.btc-users.users-manager-path").get)
+        Right(WebSocketHandler.props(token, usersManager, webSocketHandlerTimeout, _: ActorRef))
       } else {
         Left(Unauthorized("Token expired or not found"))
       }
@@ -137,15 +84,71 @@ object BtcWs extends Controller with Formats {
   private def tokenManagerUrl(authToken: String) = WS.url(s"http://$tokenManagerHost:$tokenManagerPort/tokens/$authToken")
   private val tokenManagerHost = current.configuration.getString("services.token-manager.host").get
   private val tokenManagerPort = current.configuration.getInt("services.token-manager.port").get
+  private val webSocketHandlerTimeout = current.configuration.getLong("web-socket-handler.timeout").get.millis
 }
 
-object WebSocketHandlerActor {
-def props(token: Token, out: ActorRef) = Props(new WebSocketHandlerActor(token, out))
-}
+object WebSocketHandler {
+  case object Timeout
+  case object KeepAlive
 
-class WebSocketHandlerActor(token: Token, out: ActorRef) extends Actor {
-  override def receive: Receive = {
-    case r: UserEvent =>
-      out ! OperationSuccessful(r.id)
+  def props(token: Token, usersManager: ActorSelection, keepAliveTimeout: FiniteDuration, out: ActorRef) = {
+    Props(new WebSocketHandler(token, usersManager, keepAliveTimeout, out))
   }
+}
+
+class WebSocketHandler(token: Token, usersManager: ActorSelection, keepAliveTimeout: FiniteDuration, out: ActorRef) extends Actor with ActorLogging {
+  override def preStart(): Unit = requestHandlerWithTimeout()
+
+  override def receive: Receive = waitForHandler
+
+  private def waitForHandler: Receive = {
+    case InitActorResponse(handler: ActorRef) =>
+      log.info(s"Got handler for user ${token.identityId}")
+      handler ! QuerySubscriptions
+      context.become(waitForSubscriptions(handler))
+    case Timeout =>
+      log.warning(s"Timeout while waiting for handler for user ${token.identityId}, closing connection")
+      self ! PoisonPill
+  }
+
+  private def waitForSubscriptions(handler: ActorRef): Receive = {
+    case subs @ AllSubscriptions(subscriptions) =>
+      log.info(s"Got subscriptions $subscriptions for user ${token.identityId}")
+      out ! subs
+      scheduleHeartbeatAndKeepAlive(handler)
+      context.become(handleUser(handler, subscriptions))
+    case Timeout =>
+      log.warning(s"Timeout while waiting for subscriptions for user ${token.identityId}, closing connection")
+      self ! PoisonPill
+  }
+
+  private def handleUser(handler: ActorRef, subscriptions: Seq[Subscribe]): Receive = {
+    case command: Command =>
+      log.debug(s"Got command $command from user ${token.identityId}")
+      handler ! command
+    case event: MarketEvent =>
+      log.debug(s"Got market event $event for user ${token.identityId}")
+      out ! event
+    case Heartbeat =>
+      log.debug(s"Got heartbeat for user ${token.identityId}")
+      lastHeartBeat = System.currentTimeMillis()
+      scheduleHeartbeatAndKeepAlive(handler)
+    case KeepAlive if System.currentTimeMillis() - lastHeartBeat > keepAliveTimeout.toMillis =>
+      log.warning(s"Timeout while handling user ${token.identityId}, restarting")
+      requestHandlerWithTimeout()
+      context.become(waitForHandler, discardOld = true)
+  }
+
+  private def requestHandlerWithTimeout(): Unit = {
+    log.info(s"Requesting handler for user ${token.identityId}")
+    usersManager ! LookupUser(token.identityId)
+    context.system.scheduler.scheduleOnce(keepAliveTimeout, self, Timeout)
+  }
+
+  private def scheduleHeartbeatAndKeepAlive(handler: ActorRef): Unit = {
+    context.system.scheduler.scheduleOnce(keepAliveTimeout / 3, handler, Heartbeat)
+    context.system.scheduler.scheduleOnce(keepAliveTimeout, self, KeepAlive)
+  }
+
+  private var lastHeartBeat = System.currentTimeMillis()
 }
