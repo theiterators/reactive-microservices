@@ -1,13 +1,13 @@
 package metrics.common
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor._
 import akka.http.Http
 import akka.http.client.RequestBuilding
 import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.FlowMaterializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{RunnableFlow, Flow, Sink, Source}
 import com.typesafe.config.Config
 import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat, _}
 
@@ -55,22 +55,43 @@ trait Metrics {
 
   private lazy val metricsConnectionFlow = Http().outgoingConnection(config.getString("services.metrics-collector.host"),
                                                                      config.getInt("services.metrics-collector.port")).flow
-
   private lazy val metricsSource = Source[Metric](MetricsManager.props)
   private lazy val requestFlow = Flow[Metric].map(m => RequestBuilding.Post("/metrics", m))
-  private lazy val materializedMap = metricsSource.via(requestFlow).via(metricsConnectionFlow).to(Sink.ignore).run()
+  private lazy val metricsFlow: RunnableFlow = metricsSource.via(requestFlow).via(metricsConnectionFlow).to(Sink.onComplete { _ =>
+    val metricsManagerRef =  metricsFlow.run().get(metricsSource)
+    metricsSupervisorRef ! MetricsSupervisor.NewMetricsManager(metricsManagerRef)
+  })
+
+  private lazy val materializedMap = metricsFlow.run()
   private lazy val metricsManagerRef = materializedMap.get(metricsSource)
 
-  def putMetric(metric: Metric): Unit = metricsManagerRef ! metric
+  private lazy val metricsSupervisorRef = actorSystem.actorOf(MetricsSupervisor.props(metricsManagerRef))
+
+  def putMetric(metric: Metric): Unit = metricsSupervisorRef ! metric
+
+  private class MetricsSupervisor(initial: ActorRef) extends Actor {
+    override def receive: Receive = {
+      case m: Metric => metricsManager ! m
+      case MetricsSupervisor.NewMetricsManager(mm) => metricsManager = mm
+    }
+
+    private var metricsManager = initial
+  }
+
+  private object MetricsSupervisor {
+    def props(initial: ActorRef) = Props(new MetricsSupervisor(initial))
+
+    case class NewMetricsManager(metricsManager: ActorRef)
+  }
 
   private class MetricsManager extends ActorPublisher[Metric] {
     override def receive: Receive = {
       case metric: Metric if buffer.size == MaxBufferSize =>
         // drop
       case metric: Metric =>
-        if (buffer.isEmpty && totalDemand > 0)
+        if (buffer.isEmpty && totalDemand > 0) {
           onNext(metric)
-        else {
+        } else {
           buffer :+= metric
           deliverBuffer()
         }
