@@ -3,7 +3,7 @@ import akka.http.Http
 import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.blocking
 import scala.slick.driver.PostgresDriver.simple._
@@ -33,7 +33,7 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
   val dbPassword = config.getString("db.password")
 
   implicit val actorSystem = ActorSystem()
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
@@ -55,7 +55,7 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
     }
   }
 
-  Http().bind(interface = interface, port = port).startHandlingWith {
+  Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("identity-manager") {
       path("identities") {
         pathEndOrSingleSlash {
@@ -73,5 +73,5 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
         }
       }
     }
-  }
+  })
 }

@@ -8,7 +8,7 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
-  val akkaStreamV = "1.0-M2"
+  val akkaStreamV = "1.0-M5"
   val slickV = "2.1.0"
   val postgresV = "9.3-1102-jdbc41"
   Seq(

@@ -54,16 +54,15 @@ trait Metrics {
   protected val config: Config
 
   private lazy val metricsConnectionFlow = Http().outgoingConnection(config.getString("services.metrics-collector.host"),
-                                                                     config.getInt("services.metrics-collector.port")).flow
+                                                                     config.getInt("services.metrics-collector.port"))
   private lazy val metricsSource = Source[Metric](MetricsManager.props)
   private lazy val requestFlow = Flow[Metric].map(m => RequestBuilding.Post("/metrics", m))
-  private lazy val metricsFlow: RunnableFlow = metricsSource.via(requestFlow).via(metricsConnectionFlow).to(Sink.onComplete { _ =>
-    val metricsManagerRef =  metricsFlow.run().get(metricsSource)
+  private lazy val metricsFlow: RunnableFlow[ActorRef] = metricsSource.via(requestFlow).via(metricsConnectionFlow).to(Sink.onComplete { _ =>
+    val metricsManagerRef = metricsFlow.run()
     metricsSupervisorRef ! MetricsSupervisor.NewMetricsManager(metricsManagerRef)
   })
 
-  private lazy val materializedMap = metricsFlow.run()
-  private lazy val metricsManagerRef = materializedMap.get(metricsSource)
+  private lazy val metricsManagerRef = metricsFlow.run()
 
   private lazy val metricsSupervisorRef = actorSystem.actorOf(MetricsSupervisor.props(metricsManagerRef))
 

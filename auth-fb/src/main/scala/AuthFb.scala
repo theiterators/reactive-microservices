@@ -4,7 +4,7 @@ import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import com.restfb.exception.FacebookException
 import scala.util.{Failure => FailureT, Success => SuccessT}
 
@@ -15,13 +15,13 @@ case class Token(value: String, validTo: Long, identityId: Long, authMethods: Se
 
 object AuthFb extends App with JsonProtocols with Config {
   implicit val actorSystem = ActorSystem()
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val gateway = new Gateway
   val service = new Service(gateway)
 
-  Http().bind(interface = interface, port = port).startHandlingWith {
+  Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("auth-fb") {
       (path("register" / "fb") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
         complete {
@@ -48,5 +48,5 @@ object AuthFb extends App with JsonProtocols with Config {
         }
       }
     }
-  }
+  })
 }

@@ -3,7 +3,7 @@ import akka.http.Http
 import akka.http.client.RequestBuilding
 import akka.http.model.{HttpResponse, HttpRequest}
 import akka.http.server.Directives._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Future
@@ -16,16 +16,16 @@ object SessionManager extends App {
   val tokenManagerPort = config.getInt("services.token-manager.port")
 
   implicit val actorSystem = ActorSystem()
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
-  val tokenManagerConnectionFlow = Http().outgoingConnection(tokenManagerHost, tokenManagerPort).flow
+  val tokenManagerConnectionFlow = Http().outgoingConnection(tokenManagerHost, tokenManagerPort)
 
   def requestTokenManager(request: HttpRequest): Future[HttpResponse] = {
     Source.single(request).via(tokenManagerConnectionFlow).runWith(Sink.head)
   }
 
-  Http().bind(interface = interface, port = port).startHandlingWith {
+  Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("session-manager") {
       path("session") {
         headerValueByName("Auth-Token") { tokenValue =>
@@ -44,5 +44,5 @@ object SessionManager extends App {
         }
       }
     }
-  }
+  })
 }

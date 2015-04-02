@@ -4,7 +4,7 @@ import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 case class PasswordRegisterRequest(email: EmailAddress, password: String)
 case class PasswordLoginRequest(email: EmailAddress, password: String)
@@ -15,14 +15,14 @@ case class Token(value: String, validTo: Long, identityId: Long, authMethods: Se
 
 object AuthPassword extends App with JsonProtocols with Config {
   implicit val actorSystem = ActorSystem()
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val repository = new Repository
   val gateway = new Gateway
   val service = new Service(repository, gateway)
 
-  Http().bind(interface = interface, port = port).startHandlingWith {
+  Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("auth-password") {
       path("register" / "password") {
         (pathEndOrSingleSlash & post & entity(as[PasswordRegisterRequest]) & optionalHeaderValueByName("Auth-Token")) {
@@ -58,5 +58,5 @@ object AuthPassword extends App with JsonProtocols with Config {
         }
       }
     }
-  }
+  })
 }

@@ -4,7 +4,7 @@ import akka.http.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import metrics.common.{Value, RequestResponseStats, Counter, Metrics}
 import metrics.common.MetricsDirectives._
 
@@ -16,7 +16,7 @@ case class Token(value: String, validTo: Long, identityId: Long, authMethods: Se
 
 object TokenManager extends App with JsonProtocols with Config with Metrics {
   implicit val actorSystem = ActorSystem()
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
 
   val repository = new Repository
@@ -27,7 +27,7 @@ object TokenManager extends App with JsonProtocols with Config with Metrics {
     putMetric(Value(s"token-manager.$method.time", requestStats.time))
   }
 
-  Http().bind(interface = interface, port = port).startHandlingWith {
+  Http().bindAndHandle(interface = interface, port = port, handler = {
     (measureRequestResponse(putMetricForRequestResponse) & logRequestResult("token-manager")) {
       pathPrefix("tokens") {
         (post & pathEndOrSingleSlash & entity(as[LoginRequest])) { loginRequest =>
@@ -71,6 +71,6 @@ object TokenManager extends App with JsonProtocols with Config with Metrics {
         }
       }
     }
-  }
+  })
 }
 

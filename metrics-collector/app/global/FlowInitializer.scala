@@ -7,7 +7,7 @@ import akka.http.model.StatusCodes.OK
 import akka.http.model.{HttpRequest, HttpResponse}
 import akka.http.unmarshalling.Unmarshal
 import akka.routing.{RemoveRoutee, NoRoutee, AddRoutee, BroadcastGroup}
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.actor.ActorSubscriberMessage.{OnComplete, OnNext}
 import akka.stream.actor.{ActorSubscriber, RequestStrategy, WatermarkRequestStrategy}
 import akka.stream.scaladsl._
@@ -18,7 +18,6 @@ import reactivemongo.api.MongoDriver
 import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.bson.Macros
 import reactivemongo.core.nodeset.Authenticate
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
@@ -26,36 +25,34 @@ object FlowInitializer extends GlobalSettings {
   override def onStart(a: Application): Unit = {
     implicit val app = a
     implicit val actorSystem = Akka.system
-    implicit val materializer = FlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
     implicit val dispatcher = actorSystem.dispatcher
 
     val interface = app.configuration.getString("metrics-collector.interface").get
     val port = app.configuration.getInt("metrics-collector.port").get
 
-    val in = UndefinedSource[HttpRequest]
-    val out = UndefinedSink[HttpResponse]
+    val requestFlow = Flow() { implicit b =>
+      import FlowGraph.Implicits._
 
-    val requestFlow = PartialFlowGraph { implicit b =>
-      import akka.stream.scaladsl.FlowGraphImplicits._
+      val wsSubscriber = b.add(Sink[Metric](ActorsWs.props))
+      val journalerSubscriber = b.add(Sink[Metric](ActorJournaler.props(app.configuration)))
 
-      val wsSubscriber = Sink[Metric](ActorsWs.props)
-      val journalerSubscriber = Sink[Metric](ActorJournaler.props(app.configuration))
-
-      val requestResponseFlow = Flow[HttpRequest].map(_ => HttpResponse(OK))
-      val requestMetricFlow = Flow[HttpRequest].mapAsync { request =>
+      val requestResponseFlow = b.add(Flow[HttpRequest].map(_ => HttpResponse(OK)))
+      val requestMetricFlow = b.add(Flow[HttpRequest].mapAsync { request =>
         Unmarshal(request.entity).to[Metric].map(Seq(_)).fallbackTo(Future.successful(Seq.empty[Metric]))
-      }.mapConcat(identity)
+      }.mapConcat(identity))
 
-      val broadcastRequest = Broadcast[HttpRequest]
-      val broadcastMetric = Broadcast[Metric]
+      val broadcastRequest = b.add(Broadcast[HttpRequest](2))
+      val broadcastMetric = b.add(Broadcast[Metric](2))
 
-      in ~> broadcastRequest ~> requestResponseFlow ~> out
-            broadcastRequest ~> requestMetricFlow ~> broadcastMetric ~> wsSubscriber
-                                                     broadcastMetric ~> journalerSubscriber
+      broadcastRequest ~> requestResponseFlow
+      broadcastRequest ~> requestMetricFlow ~> broadcastMetric ~> wsSubscriber
+                                               broadcastMetric ~> journalerSubscriber
 
-    }.toFlow(in, out)
+      (broadcastRequest.in, requestResponseFlow.outlet)
+    }
 
-    Http().bind(interface = interface, port = port).startHandlingWith(requestFlow)
+    Http().bindAndHandle(interface = interface, port = port, handler = requestFlow)
 
     val router = actorSystem.actorOf(BroadcastGroup(List.empty[String]).props(), RouterName)
     router ! AddRoutee(NoRoutee) // prevents router from terminating when last websocket disconnects
