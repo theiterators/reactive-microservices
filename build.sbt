@@ -6,7 +6,10 @@ organization := "com.theiterators"
 
 version := "1.0"
 
-lazy val `reactive-microservices` = project in file(".")
+lazy val `reactive-microservices` = (project in file(".")).aggregate(`frontend-server`, `metrics-collector`, `token-manager`, `session-manager`,
+  `identity-manager`, `auth-fb`, `auth-codecard`, `auth-password`, `btc-ws`, `btc-users`)
+
+lazy val `frontend-server` = project in file("frontend-server")
 
 lazy val metricsCommon = project in file("metrics-common")
 
