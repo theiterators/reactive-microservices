@@ -6,8 +6,7 @@ organization := "com.theiterators"
 
 version := "1.0"
 
-lazy val `reactive-microservices` = (project in file(".")).aggregate(`frontend-server`, `metrics-collector`, `token-manager`, `session-manager`,
-  `identity-manager`, `auth-fb`, `auth-codecard`, `auth-password`, `btc-ws`, `btc-users`)
+lazy val `reactive-microservices` = (project in file("."))
 
 lazy val `frontend-server` = project in file("frontend-server")
 
@@ -47,3 +46,5 @@ runAll := {
   (run in Compile in `btc-ws`).evaluated
   (run in Compile in `btc-users`).evaluated
 }
+
+fork in run := true
