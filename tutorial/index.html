@@ -8,7 +8,19 @@
     <h2>Reactive microservices</h2>
 
     <p>
-        First paragraph
+        <i>Reactive microservices</i> is an activator template completely devoted to microservices architecture. It lets you learn about microservices in general &mdash; different patterns, communication channels and 'tastes' of microservices. All these concepts are demonstrated using Typesafe Reactive Platform and other tools from Scala ecosystem. For the sake of clarity, we skipped topics related to deployment and operations &mdash; that's a great subject for another big activator template.
+    </p>
+
+    <h3>Prerequisites</h3>
+
+    <p>
+        To feel comfortable while playing with this template, make sure you know basics of akka-http which is a cornerstone of this project. We recently released an <a href="https://typesafe.com/activator/template/akka-http-microservice">Akka HTTP activator template</a> that may help you start. At least brief knowledge of <a href="https://typesafe.com/activator/template/akka-sample-remote-scala">Akka remoting</a>, <a href="https://typesafe.com/activator/template/akka-sample-persistence-scala">Akka persistence</a>, <a href="https://typesafe.com/activator/template/akka-stream-scala">Akka streams</a> and <a href="https://typesafe.com/activator/template/anonymous-chat">Play Framework websockets</a> is also highly recommended. Anyway, don't worry &mdash; all these technologies (and more!) will be discussed on the way but we won't dig into the details.
+    </p>
+
+    <h3>Notes on running</h3>
+
+    <p>
+        This activator template consists of 10 runnable subprojects (auth-codecard, auth-fb, auth-password, btc-users, btc-ws, frontend-server, identity-manager, session-manager, metrics-collector, token-manager). Running them separately, one by one, is of course possible but for your convenience we provided a SBT task called <i>runAll</i>. However, before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running. Also take some time to review application.conf files &mdash; database configurations may required little tweaking. For <i>auth-codecard</i>, <i>identity-manager</i> and <i>auth-password</i> you need to manually run migration SQL scripts which are located in relevant <i>resources</i> directories. Everything else should work out of the box. Enjoy!
     </p>
 </div>
 </body>
