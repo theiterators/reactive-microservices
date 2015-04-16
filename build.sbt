@@ -36,14 +36,12 @@ val runAll = inputKey[Unit]("Runs all subprojects")
 
 runAll := {
   (run in Compile in `frontend-server`).evaluated
-  (run in Compile in `metrics-collector`).evaluated
   (run in Compile in `token-manager`).evaluated
   (run in Compile in `session-manager`).evaluated
   (run in Compile in `identity-manager`).evaluated
   (run in Compile in `auth-fb`).evaluated
   (run in Compile in `auth-codecard`).evaluated
   (run in Compile in `auth-password`).evaluated
-  (run in Compile in `btc-ws`).evaluated
   (run in Compile in `btc-users`).evaluated
 }
 
