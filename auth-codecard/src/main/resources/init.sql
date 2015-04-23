@@ -3,7 +3,7 @@ CREATE TABLE "auth_entry"(
   identity_id BIGINT NOT NULL,
   created_at BIGINT NOT NULL,
   last_card BIGINT
-)
+);
 
 CREATE TABLE "code"(
   user_identifier CHAR(10) REFERENCES auth_entry,
@@ -14,4 +14,4 @@ CREATE TABLE "code"(
   activated_at BIGINT,
   used_at BIGINT,
   PRIMARY KEY (user_identifier, card_index, code_index)
-)
+);
