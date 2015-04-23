@@ -1,6 +1,6 @@
 # Reactive microservices
 
-Reactive microservices is an Typesafe Activator Template completely devoted to microservices architecture. It lets you learn about microservices in general - different patterns, communication channels and 'tastes' of microservices. All these concepts are demonstrated using Typesafe Reactive Platform and other tools from Scala ecosystem. For the sake of clarity, we skipped topics related to deployment and operations.
+Reactive microservices is an Typesafe Activator Template completely devoted to microservices architecture. It lets you learn about microservices in general - different patterns, communication protocols and 'tastes' of microservices. All these concepts are demonstrated using Scala, Akka, Play and other tools from Scala ecosystem. For the sake of clarity, we skipped topics related to deployment and operations.
 
 ## Prerequisites
 
