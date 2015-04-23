@@ -10,6 +10,8 @@ lazy val btcCommon = project in file("../btc-common")
 
 lazy val `btc-ws` = (project in file(".")).enablePlugins(PlayScala).dependsOn(btcCommon)
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
 libraryDependencies ++= {
   val akkaV = "2.3.9"
   Seq(

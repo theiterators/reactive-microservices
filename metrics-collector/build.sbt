@@ -10,6 +10,8 @@ lazy val metricsCommon = project in file("../metrics-common")
 
 lazy val `metrics-collector` = (project in file(".")).dependsOn(metricsCommon).enablePlugins(PlayScala)
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
 libraryDependencies ++= {
   val akkaV = "2.3.9"
   val akkaStreamV = "1.0-M5"
