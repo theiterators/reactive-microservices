@@ -23,5 +23,71 @@
         This activator template consists of 10 runnable subprojects (auth-codecard, auth-fb, auth-password, btc-users, btc-ws, frontend-server, identity-manager, session-manager, metrics-collector, token-manager). Running them separately, one by one, is of course possible but for your convenience we provided a SBT task called <i>runAll</i>. However, due to some issues with Play/sbt cooperation metrics-collector and btc-ws should be run separately like this: <i>; project btc-ws; run 9000</i>, <i>; project metrics-collector; run 5001</i>. Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running. Also take some time to review application.conf files &mdash; database configurations may require little tweaking. For <i>auth-codecard</i>, <i>identity-manager</i> and <i>auth-password</i> you need to manually run migration SQL scripts which are located in relevant <i>resources</i> directories. Everything else should work out of the box. Enjoy!
     </p>
 </div>
+<div>
+    <h2>What are microservices?</h2>
+
+    <p>
+        There's no formal or widespread definition of a microservice. However usually microservices are defined as an software architectural style in which system is composed of multiple services. Those services are small (or at least smaller than in typical, monolith applications), can be independently deployed and they communicate using (lightweight) protocols. Well&ndash;defined microservice should be organized around business capabilities or to put it in Domain&ndash;Driven Design wording &mdash; should encapsulate Bounded Context. Sometimes it is said that microservices are implementation of Single Responsibility Principle in architecture.
+    </p>
+
+    <h3>Opportunities</h3>
+
+    <p>
+        Applications based on a microservice architecture are basically distributed systems. This means that they can scale horizontally in a much more flexible way than monolithic systems &mdash; instead of replicating whole heavyweight process one can spawn multiple instances of services that are under load. This guarantees better hardware utilization &mdash; money savings. Another important consequence of moving from monolith to microservices is the need of designing for failure which can result in a truly reactive system. Like it or not, while designing a distributed system you have to take failure into account &mdash; otherwise you will see your system falling apart.
+    </p>
+    <p>
+        However, technical benefits of introducing a microservice&ndash;based architecture are far less important than the social ones. MSA enables truly cross&ndash;functional teams organized around business capabilities which are implemented by microservices. This in turn allows easy team scaling and makes team members care more about actual business behind the technology. This agility together with autonomy of teams usually result in a shorter time&ndash;to&ndash;market. In fact, most of the early adopters of microservices (Netflix, Amazon, SoundCloud, Tumblr) underline the ability to deliver faster as the main selling point of microservices.
+        <br />
+        Shorter time&ndash;to&ndash;market stems not only from well&ndash;organized teams but also from other features of MSA. First of all, microservices are supposed to be easier to understand (thus maintain) than monolithic systems. Smaller size also means that microservices can be easily rewritten (or simply disposed) instead of being refactored which usually is expansive and results in sub&ndash;optimal code quality. Autonomy of teams enables polyglot approach which provides better utilization of tools and bounded context is supposed to increase code reusability. Microservices should also be fun for developers, as everything that's new and challenging.
+    </p>
+
+    <h3>Dilemmas &amp; problems</h3>
+
+    <p>
+        A shift from monolithic to microservices architecture is a serious step. Distributed systems are totally different than monolithic ones and have their own dilemmas and problems. First and foremost microservices are all about communication and protocols. One should be aware that microservices doesn't magically suppress complexity &mdash; they just move it from code to communication layer. Different communication protocols (synchronous and asynchronous) and transport guarantees will be the main subject of this tutorial (see W, X, Y, Z). Another important subject worth mentioning while discussing microservices is a polyglot persistence &mdash; how to embrace multiple different data stores and not lose consistency and performance. You can check out this approach in our activator template in chapter X. Very common question asked while developing microservices is 'how big is a microservice?' &mdash; we'll discuss it in chapter X. Microservice approach requires some boilerplate; one may be tempted to share code using shared libraries which introduce coupling &mdash; why and when would you like to do that? See chapter X. There's also a multitude of the problems which are out of the scope of this template like: testing (why, when and how to do it?), polyglot approach (is it worth the cost?), operations, contract management (what's my API, who are my collaborators, how can I contact them?), API versioning (how to stay backward compatible?), logging &amp; debugging and security. Feel encouraged to enrich this activator template with suitable examples and tutorials &mdash; and let us know!
+    </p>
+</div>
+<div>
+    <h2>System blueprint</h2>
+
+    <p>
+        To present different concepts related to microservices we built an authentication system. The idea behind it is really simple &mdash; you can sign in/sign up using arbitrarily chosen authentication methods (currently they're email&ndash;password, Facebook Oauth, codecard). Number of used authentication methods indicates user's token strength. User that presents a valid authentication token can access business applications behind the authentication system. To test if our authentication system actually works we integrated a simple application that after singing in lets users subscribe and get notifications in real&ndash;time about bitcoin market events such as rate change, volume above/below certain level etc.
+    </p>
+
+    <h3>System design</h3>
+    <img src="tutorial/arch.png" />
+    <p>If you want to have a closer look at this schema <a href="tutorial/arch.png">go here</a>.</p>
+    <p>
+        Complete system consists of 9 microservices:
+        <ul>
+            <li><i>identity-manager</i> &mdash; serves as a identity issuer in our system; it is being called each time user registers.</li>
+            <li><i>token-manager</i> &mdash; focal point of the system; manages tokens which consist of identity id, value and expiration date; it is being called when user signs in, signs out or other service verifies identity of token supplier.</li>
+            <li><i>metrics-collector</i> &mdash; gathers important metrics from critical <i>token-manager</i> service; allows to preview them using websockets.</li>
+            <li><i>session-manager</i> &mdash; proxies a requests to token-manager that come from the outside (untrusted) world.</li>
+            <li><i>auth-fb</i> &mdash; provides authentication via Facebook Oauth; it is being called when user signs in/signs up using this method.</li>
+            <li><i>auth-password</i> &mdash; provides authentication using email/password pair; it is being called when user signs in/signs up using this method.</li>
+            <li><i>auth-codecard</i> &mdash; provides authentication with card of codes; it is being called when user signs in/signs up using this method.</li>
+            <li><i>btc-users</i> &mdash; manages subscriptions; fetches data from BTC market; routes events to users; communicates with <i>btc-ws</i>.</li>
+            <li><i>btc-ws</i> &mdash; serves as a façade and a translation layer over <i>btc-users</i> offering end&ndash;user convenient websockets API; communicates with <i>token-manager</i> to authenticate user access.</li>
+        </ul>
+
+    Spend some time analyzing communication paths, protocols and data stores &mdash; it might be useful during our tour around each service of the system.
+    </p>
+</div>
+<div>
+    <h2>Synchronous HTTP &mdash; akka&ndash;http</h2>
+</div>
+<div>
+    <h2>Asynchronous HTTP stream &mdash; akka&ndash;http</h2>
+</div>
+<div>
+    <h2>Asynchronous HTTP &mdash; websockets in Play</h2>
+</div>
+<div>
+    <h2>Asynchronous messaging &mdash; Akka actors</h2>
+</div>
+<div>
+    <h2>Summary</h2>
+</div>
 </body>
 </html>
