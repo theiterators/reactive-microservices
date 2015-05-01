@@ -9,7 +9,7 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= {
-  val akkaV = "2.3.9"
+  val akkaV = "2.3.10"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaV
   )

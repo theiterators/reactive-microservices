@@ -1,8 +1,8 @@
 import akka.actor.ActorSystem
-import akka.http.Http
-import akka.http.client.RequestBuilding
-import akka.http.model.{HttpResponse, HttpRequest}
-import akka.http.server.Directives._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory

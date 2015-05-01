@@ -1,8 +1,8 @@
 import akka.actor.ActorSystem
-import akka.http.Http
-import akka.http.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.model.StatusCodes._
-import akka.http.server.Directives._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorFlowMaterializer
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.blocking

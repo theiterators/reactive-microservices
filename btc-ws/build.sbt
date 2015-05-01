@@ -13,7 +13,7 @@ lazy val `btc-ws` = (project in file(".")).enablePlugins(PlayScala).dependsOn(bt
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= {
-  val akkaV = "2.3.9"
+  val akkaV = "2.3.10"
   Seq(
     ws,
     "com.typesafe.akka" %% "akka-actor" % akkaV,

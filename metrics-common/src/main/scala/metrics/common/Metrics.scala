@@ -1,9 +1,9 @@
 package metrics.common
 
 import akka.actor._
-import akka.http.Http
-import akka.http.client.RequestBuilding
-import akka.http.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.FlowMaterializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
@@ -55,7 +55,7 @@ trait Metrics {
 
   private lazy val metricsConnectionFlow = Http().outgoingConnection(config.getString("services.metrics-collector.host"),
                                                                      config.getInt("services.metrics-collector.port"))
-  private lazy val metricsSource = Source[Metric](MetricsManager.props)
+  private lazy val metricsSource = Source.actorPublisher[Metric](MetricsManager.props)
   private lazy val requestFlow = Flow[Metric].map(m => RequestBuilding.Post("/metrics", m))
   private lazy val metricsFlow: RunnableFlow[ActorRef] = metricsSource.via(requestFlow).via(metricsConnectionFlow).to(Sink.onComplete { _ =>
     val metricsManagerRef = metricsFlow.run()

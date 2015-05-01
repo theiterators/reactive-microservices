@@ -1,9 +1,9 @@
 import akka.actor.ActorSystem
-import akka.http.Http
-import akka.http.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.marshalling.ToResponseMarshallable
-import akka.http.model.StatusCodes._
-import akka.http.server.Directives._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorFlowMaterializer
 
 case class CodeCard(id: Long, codes: Seq[String], userIdentifier: String)

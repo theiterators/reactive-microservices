@@ -1,11 +1,11 @@
 package global
 
 import akka.actor.{PoisonPill, Props}
-import akka.http.Http
-import akka.http.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.model.StatusCodes.OK
-import akka.http.model.{HttpRequest, HttpResponse}
-import akka.http.unmarshalling.Unmarshal
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes.OK
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.routing.{RemoveRoutee, NoRoutee, AddRoutee, BroadcastGroup}
 import akka.stream.ActorFlowMaterializer
 import akka.stream.actor.ActorSubscriberMessage.{OnComplete, OnNext}

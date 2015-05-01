@@ -1,12 +1,12 @@
 package metrics.common
 
-import akka.http.model.{HttpRequest, HttpResponse}
-import akka.http.server.Directive0
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.server.Directive0
 
 case class RequestResponseStats(request: HttpRequest, response: HttpResponse, time: Long)
 
 trait MetricsDirectives {
-  import akka.http.server.directives.BasicDirectives._
+  import akka.http.scaladsl.server.directives.BasicDirectives._
 
   def measureRequestResponse(f: (RequestResponseStats => Unit)): Directive0 = {
     extractRequestContext.flatMap { ctx =>
