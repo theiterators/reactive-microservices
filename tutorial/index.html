@@ -76,6 +76,50 @@
 </div>
 <div>
     <h2>Synchronous HTTP &mdash; akka&ndash;http</h2>
+    <p>
+        Synchronous communication is a data transfer method in which receiving and sending are governed by strict timing signals. It's usually takes the form of a request&ndash;response protocol &mdash; party sends data only when it's explicitly asked for it. That's how typical HTTP service works. Synchronous protocols are very popular because they're easy to understand and analyze. However they have one significant drawback &mdash; they don't scale well. First of all, synchronous protocols introduce liveness issues &mdash; when you ask for something you have to be prepared that your call may explicitly fail or even worse you may never get any response at all (that's why you need timeouts). Secondly, usually if you ask for something, you have to wait for the response to continue processing. Several such calls and you'll end up waiting most of the time instead of doing something actually useful. Having said that, world wide web we use daily is mostly synchronous &mdash; you click 'Log in' button and you wait for 'Login successful' confirmation box. Request&ndash;response &mdash; that's how vanilla HTTP works. Synchronous communication is also useful (well, almost unavoidable) while designing microservice&ndash;based system &mdash; learn why and when.
+    </p>
+    <h3>identity-manager</h3>
+    <p>
+        identity-manager is a microservice for issuing and managing existing identities in the system. <a href="#code/identity-manager/src/main/scala/IdentityManager.scala" class="shortcut">Code</a> of this service is very straightforward, it consists of:
+        <ul>
+            <li><a href="#code/identity-manager/src/main/scala/IdentityManager.scala:15" class="shortcut">Slick functional mapping definition</a></li>
+            <li><a href="#code/identity-manager/src/main/scala/IdentityManager.scala:24" class="shortcut">Extracting config values</a></li>
+            <li><a href="#code/identity-manager/src/main/scala/IdentityManager.scala:37" class="shortcut">Database connection &amp; configuration</a></li>
+            <li><a href="#code/identity-manager/src/main/scala/IdentityManager.scala:40" class="shortcut">Little repository layer</a></li>
+            <li><a href="#code/identity-manager/src/main/scala/IdentityManager.scala:56" class="shortcut">Routing</a></li>
+        </ul>
+    identity-manager has well&ndash;defined responsibility &mdash; creating and listing existing identities. For now it only keep identity id and creation date but as such system evolves it might be useful to keep ex. user's first and last name (feel encouraged to create this enhancement!). The service is really short (75 lines!), thus easy to understand and maintain. It doesn't have well&ndash;known layer structure (repository&ndash;service&ndash;routing) as it would only introduce burden and additional boilerplate. That's however not always the case &mdash; let's see more complex services.
+    </p>
+
+    <h3>auth-codecard, auth-password</h3>
+    <p>
+        auth-codecard, auth-password are services for signing in/signing up using codecard and email&ndash;password respectively. These are user facing services, which means that SPA frontend application communicates with them directly. They're synchronous by design &mdash; when user logs in or registers, she has to wait for the operation to complete before proceeding. These services are much more complex, thus structured:
+        <ul>
+            <li>Initialization &amp; routing logic which calls methods of services (<a href="#code/auth-codecard/src/main/scala/AuthCodeCard.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/AuthPassword.scala" class="shortcut">password</a>)</li>
+            <li>JsonProtocols which are being used to convert objects to jsons (<a href="#code/auth-codecard/src/main/scala/JsonProtocols.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/JsonProtocols.scala" class="shortcut">password</a>)</li>
+            <li>Config values which are used in different parts of the application (<a href="#code/auth-codecard/src/main/scala/Config.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Config.scala" class="shortcut">password</a>)</li>
+            <li>Service that handles business logic by interacting with repository (local datastore) and gateway (remote calls) (<a href="#code/auth-codecard/src/main/scala/Service.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Service.scala" class="shortcut">password</a>)</li>
+            <li>Repository that handles interactions with local datastore (<a href="#code/auth-codecard/src/main/scala/Repository.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Repository.scala" class="shortcut">password</a>)</li>
+            <li>Gateway that communicates with external services (identity-manager &amp; token-manager) (<a href="#code/auth-codecard/src/main/scala/Gateway.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Gateway.scala" class="shortcut">password</a>)</li>
+        </ul>
+        There are a few things to note about these services. First of all, they provide similar functionalities but each authentication method has its own characteristics (ex. codecard needs card renewal, email&ndash;password needs password changing) &mdash; that's why they're completely separated. Another important thing is that structure introduces organizational complexity but abstraction allows to hide some implementation details and makes code easier to understand and maintain. Last but not least, careful reader might have noticed that both Gateway source codes looks really similar (<a href="#code/auth-codecard/src/main/scala/Gateway.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Gateway.scala" class="shortcut">password</a>). One may be tempted to write a shared library to reduce source code duplication. Shared libraries are generally discouraged when writing microservices because they introduce another layer of coupling. However, that's sometimes unavoidable &mdash; we'll see that in <a href="http://localhost:8888/app/reactive-microservices/#tutorial/4" class="shortcut">the next chapter</a>.
+    </p>
+
+    <h3>auth-fb</h3>
+    <p>
+        auth-fb is a service for signing in/signing up with Facebook Oauth and is very similar to auth-codecard and auth-password. However it misses separate <i>Repository</i> layer. Microservices are all about agility and flexibility, so we don't have to follow the same rules all the time. auth-fb uses Redis &mdash; database with very simple interface and writing dedicated class for interacting with it would be an overkill. That's why all the database access is done inside <a href="#code/auth-fb/src/main/scala/Service.scala" class="shortcut">Service</a>. Looking at auth-fb it's easy to notice how polyglot persistence approach is helping developing microservices &mdash; each authentication method service is responsible for (and only for) its own registration data and can use the best persistence method to store it (simple key&ndash;value store in case of auth-fb). So called 'distributed truth' makes systems little harder to maintain and use (you can't query all the datastores at once, data access is non&ndash;uniform etc.) but it enables better tools utilization, scaling, decoupling and resilience (of course when done right).
+    </p>
+
+    <h3>token-manager</h3>
+    <p>
+
+    </p>
+
+    <h3>session-manager</h3>
+    <p>
+        
+    </p>
 </div>
 <div>
     <h2>Asynchronous HTTP stream &mdash; akka&ndash;http</h2>
