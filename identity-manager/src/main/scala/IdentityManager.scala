@@ -17,14 +17,10 @@ class Identities(tag: Tag) extends Table[Identity](tag, "identity") {
 
   def createdAt = column[Long]("created_at", O.NotNull)
 
-  override def * : ProvenShape[Identity] = (id.?, createdAt) <>((Identity.apply _).tupled, Identity.unapply)
+  override def * : ProvenShape[Identity] = (id.?, createdAt) <> ((Identity.apply _).tupled, Identity.unapply)
 }
 
-trait IdentityManagerJsonProtocols extends DefaultJsonProtocol {
-  protected implicit val identityFormat = jsonFormat2(Identity.apply)
-}
-
-object IdentityManager extends App with IdentityManagerJsonProtocols {
+object IdentityManager extends App with DefaultJsonProtocol {
   val config = ConfigFactory.load()
   val interface = config.getString("http.interface")
   val port = config.getInt("http.port")
@@ -35,6 +31,8 @@ object IdentityManager extends App with IdentityManagerJsonProtocols {
   implicit val actorSystem = ActorSystem()
   implicit val materializer = ActorFlowMaterializer()
   implicit val dispatcher = actorSystem.dispatcher
+
+  implicit val identityFormat = jsonFormat2(Identity.apply)
 
   val db = Database.forURL(url = dbUrl, user = dbUser, password = dbPassword, driver = "org.postgresql.Driver")
   val identities = TableQuery[Identities]
