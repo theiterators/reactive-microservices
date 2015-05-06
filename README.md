@@ -9,41 +9,55 @@ To feel comfortable while playing with this template, make sure you know basics 
 ## Structure
 
 This activator template consists of 10 runnable subprojects — the microservices:
-`auth-codecard`, `auth-fb`, `auth-password`, `btc-users`, `btc-ws`, `frontend-server`, `identity-manager`, `session-manager`, `metrics-collector`, `token-manager`.
+ * auth ones:
+   * `auth-codecard`
+   * `auth-fb`
+   * `auth-password`
+   * `identity-manager`
+   * `session-manager`
+   * `token-manager`
+ * business logic ones:
+   * `btc-users`
+   * `btc-ws`
+ * miscellaneous ones:
+   * `metrics-collector`
+   * `frontend-server`
+   
+They uses different communication methods, different databases, and different frameworks.
 
 ## Setup
 
-#### Review the configuration files
+### Review the configuration files
 
 Also take some time to review `application.conf` files - database configurations may require little tweaking.
 
-#### Create and configure Postgres databases
+### Create and configure Postgres databases
 
 The default DBs that need to be created are:
-— auth-codecard — ```createdb auth-code -U postgres```
-— auth-password — ```createdb auth-password -U postgres```
-— identity-manager — ```createdb identity-manager -U postgres```
+ * auth-codecard — ```createdb auth_codecard -U postgres```
+ * auth-password — ```createdb auth_password -U postgres```
+ * identity-manager — ```createdb identity_manager -U postgres```
 
-#### Run migrations
+### Run migrations
 
 For `auth-codecard`, `identity-manager` and `auth-password` you need to run the SQL migration scripts which are located in relevant `resources` directories.
 You can also tweak and use this script in your console
 
 ```
 cd /folder/where/activator/is/located/
-psql auth-codecard -U postgres -F ./auth-codecard/src/main/resources/init.sql
-psql auth-password -U postgres -F ./auth-password/src/main/resources/auth_entry.sql
-psql identity-manager -U postgres -F ./identity-manager/src/main/resources/identity.sql
+psql auth_codecard -U postgres -F ./auth-codecard/src/main/resources/init.sql
+psql auth_password -U postgres -F ./auth-password/src/main/resources/auth_entry.sql
+psql identity_manager -U postgres -F ./identity-manager/src/main/resources/identity.sql
 ```
 
 ## Running
 
-Before starting anything make sure you have PostgreSQL, MongoDB and Redis are up and running.
+Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running.
 
-#### akka-http
+### akka-http
 You can run each service separately, but we also we provided a SBT task called `runAll`.
 
-#### Play
+### Play
 Due to some issues with Play/sbt cooperation `metrics-collector` and `btc-ws` should be run separately.
 In order to run them in one sbt CLI instance use these commands:
 `; project btc-ws; run 9000`, `; project metrics-collector; run 5001`
@@ -52,7 +66,7 @@ Everything else should work out of the box. Enjoy!
 
 ## Author & license
 
-If you have any questions regarding this project contact:
+If you have any questions regarding this project contact: 
 
 Łukasz Sowa <lukasz@iterato.rs> from [Iterators](http://iterato.rs).
 
