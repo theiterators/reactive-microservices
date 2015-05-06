@@ -41,6 +41,7 @@ val cleanAll = taskKey[Unit]("Cleans all subprojects")
 
 compileAll := {
   fork in compile := true
+
   (compile in Compile in `frontend-server`).toTask.value
   (compile in Compile in `token-manager`).toTask.value
   (compile in Compile in `session-manager`).toTask.value
@@ -62,7 +63,6 @@ cleanAll := {
   (clean in Compile in `btc-users`).toTask.value
 }
 
-fork in cleanAll := true
 
 runAll := {
   (run in Compile in `frontend-server`).evaluated
@@ -76,3 +76,8 @@ runAll := {
 }
 
 fork in run := true
+
+// enables unlimited amount of resources to be used :-o just for runAll convenience
+concurrentRestrictions in Global := Seq(
+  Tags.customLimit( _ => true) 
+)
