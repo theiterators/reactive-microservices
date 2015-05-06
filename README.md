@@ -58,6 +58,81 @@ psql auth_password -U postgres -f ./auth-password/src/main/resources/auth_entry.
 psql identity_manager -U postgres -f ./identity-manager/src/main/resources/identity.sql
 ```
 
+#### Setup CORS proxy
+
+Use NGINX or such to proxy with CORS headers and OPTION request responses.
+
+Crude fast solution:
+
+```
+http {
+    server {
+        listen 10000;
+        server_name localhost;
+        set $true 1;
+        more_set_headers "Access-Control-Allow-Origin: $http_origin";
+
+        location /auth-codecard/ {
+            proxy_pass http://localhost:8005;
+            if ($request_method = OPTIONS ) {
+                add_header Access-Control-Allow-Headers "Auth-Token, Content-Type";
+                add_header Access-Control-Allow-Methods "GET, OPTIONS, POST, DELETE, PUT, PATCH";
+                add_header Access-Control-Allow-Credentials "true";
+                add_header Content-Length 0;
+                add_header Content-Type text/plain;
+                return 200;
+            }
+        }
+
+        location /auth-password/ {
+            proxy_pass http://localhost:8002;
+            if ($request_method = OPTIONS ) {
+                add_header Access-Control-Allow-Headers "Auth-Token, Content-Type";
+                add_header Access-Control-Allow-Methods "GET, OPTIONS, POST, DELETE, PUT, PATCH";
+                add_header Access-Control-Allow-Credentials "true";
+                add_header Content-Length 0;
+                add_header Content-Type text/plain;
+                return 200;
+            }
+        }
+        location /auth-fb/ {
+            proxy_pass http://localhost:8001;
+            if ($request_method = OPTIONS ) {
+                add_header Access-Control-Allow-Headers "Auth-Token, Content-Type";
+                add_header Access-Control-Allow-Methods "GET, OPTIONS, POST, DELETE, PUT, PATCH";
+                add_header Access-Control-Allow-Credentials "true";
+                add_header Content-Length 0;
+                add_header Content-Type text/plain;
+                return 200;
+            }
+        }
+        location /session/ {
+            proxy_pass http://localhost:8011;
+            if ($request_method = OPTIONS ) {
+                add_header Access-Control-Allow-Headers "Auth-Token, Content-Type";
+                add_header Access-Control-Allow-Methods "GET, OPTIONS, POST, DELETE, PUT, PATCH";
+                add_header Access-Control-Allow-Credentials "true";
+                add_header Content-Length 0;
+                add_header Content-Type text/plain;
+                return 200;
+            }
+        }
+        location /btc/ {
+            proxy_pass http://localhost:8011;
+            if ($request_method = OPTIONS ) {
+                add_header Access-Control-Allow-Headers "Auth-Token, Content-Type";
+                add_header Access-Control-Allow-Methods "GET, OPTIONS, POST, DELETE, PUT, PATCH, UPGRADE";
+                add_header Access-Control-Allow-Credentials "true";
+                add_header Content-Length 0;
+                add_header Content-Type text/plain;
+                return 200;
+            }
+        }
+    }
+}
+```
+
+
 ## Running
 
 Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running.
