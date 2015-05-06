@@ -33,10 +33,14 @@ Also take some time to review `application.conf` files - database configurations
 
 ### Create and configure Postgres databases
 
-The default DBs that need to be created are:
- * auth-codecard — ```createdb auth_codecard -U postgres```
- * auth-password — ```createdb auth_password -U postgres```
- * identity-manager — ```createdb identity_manager -U postgres```
+The default DBs that need to be created are: ```auth-codecard```, ```auth-password```, and ```identity-manager```.
+
+Script for quick setup:
+```
+createdb auth_codecard -U postgres
+createdb auth_password -U postgres
+createdb identity_manager -U postgres
+```
 
 ### Run migrations
 
