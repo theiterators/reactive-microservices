@@ -52,7 +52,7 @@ For `auth-codecard`, `identity-manager` and `auth-password` you need to run the 
 You can also tweak and use this script in your console
 
 ```
-cd /folder/where/activator/is/located/
+cd /where/this/activator/template/is/located/
 psql auth_codecard -U postgres -f ./auth-codecard/src/main/resources/init.sql &&
 psql auth_password -U postgres -f ./auth-password/src/main/resources/auth_entry.sql &&
 psql identity_manager -U postgres -f ./identity-manager/src/main/resources/identity.sql
