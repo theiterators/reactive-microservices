@@ -6,9 +6,49 @@ Reactive microservices is an Typesafe Activator Template completely devoted to m
 
 To feel comfortable while playing with this template, make sure you know basics of Akka HTTP which is a cornerstone of this project. We recently released an [Akka HTTP activator template](https://typesafe.com/activator/template/akka-http-microservice) that may help you start. At least brief knowledge of [Akka remoting](https://typesafe.com/activator/template/akka-sample-remote-scala), [Akka persistence](https://typesafe.com/activator/template/akka-sample-persistence-scala), [Akka streams](https://typesafe.com/activator/template/akka-stream-scala) and [Play Framework websockets](https://typesafe.com/activator/template/anonymous-chat) is also highly recommended.
 
-## Notes on running
+## Structure
 
-This activator template consists of 10 runnable subprojects (`auth-codecard`, `auth-fb`, `auth-password`, `btc-users`, `btc-ws`, `frontend-server`, `identity-manager`, `session-manager`, `metrics-collector`, `token-manager`). Running them separately, one by one, is of course possible but for your convenience we provided a SBT task called `runAll`. However, due to some issues with Play/sbt cooperation `metrics-collector` and `btc-ws` should be run separately like this: `; project btc-ws; run 9000`, `; project metrics-collector; run 5001`. Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running. Also take some time to review `application.conf` files - database configurations may require little tweaking. For `auth-codecard`, `identity-manager` and `auth-password` you need to manually run migration SQL scripts which are located in relevant `resources` directories. Everything else should work out of the box. Enjoy!
+This activator template consists of 10 runnable subprojects — the microservices:
+`auth-codecard`, `auth-fb`, `auth-password`, `btc-users`, `btc-ws`, `frontend-server`, `identity-manager`, `session-manager`, `metrics-collector`, `token-manager`.
+
+## Setup
+
+#### Review the configuration files
+
+Also take some time to review `application.conf` files - database configurations may require little tweaking.
+
+#### Create and configure Postgres databases
+
+The default DBs that need to be created are:
+— auth-codecard — ```createdb auth-code -U postgres```
+— auth-password — ```createdb auth-password -U postgres```
+— identity-manager — ```createdb identity-manager -U postgres```
+
+#### Run migrations
+
+For `auth-codecard`, `identity-manager` and `auth-password` you need to run the SQL migration scripts which are located in relevant `resources` directories.
+You can also tweak and use this script in your console
+
+```
+cd /folder/where/activator/is/located/
+psql auth-codecard -U postgres -F ./auth-codecard/src/main/resources/init.sql
+psql auth-password -U postgres -F ./auth-password/src/main/resources/auth_entry.sql
+psql identity-manager -U postgres -F ./identity-manager/src/main/resources/identity.sql
+```
+
+## Running
+
+Before starting anything make sure you have PostgreSQL, MongoDB and Redis are up and running.
+
+#### akka-http
+You can run each service separately, but we also we provided a SBT task called `runAll`.
+
+#### Play
+Due to some issues with Play/sbt cooperation `metrics-collector` and `btc-ws` should be run separately.
+In order to run them in one sbt CLI instance use these commands:
+`; project btc-ws; run 9000`, `; project metrics-collector; run 5001`
+
+Everything else should work out of the box. Enjoy!
 
 ## Author & license
 
