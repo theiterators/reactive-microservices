@@ -27,13 +27,13 @@ They uses different communication methods, different databases, and different fr
 
 ## Setup
 
-### Review the configuration files
+#### Review the configuration files
 
-Also take some time to review `application.conf` files - database configurations may require little tweaking.
+Take some time to review `application.conf` files that are located in ```resource``` subdirectory of each microservice.
 
-### Create and configure Postgres databases
+#### Create and configure Postgres databases
 
-The default names of the DBs that need to be created are: ```auth_codecard```, ```auth_password```, and ```identity_manager```.
+The default names of the DBs that need to be created are: ```auth_codecard```, ```auth_password```, and ```identity_manager```. If you want to use non-default names please tweak the `application.conf` files.
 
 Scripts for quick setup:
 ```
@@ -46,7 +46,7 @@ createdb auth_password -U postgres
 createdb identity_manager -U postgres
 ```
 
-### Run migrations
+#### Run migrations
 
 For `auth-codecard`, `identity-manager` and `auth-password` you need to run the SQL migration scripts which are located in relevant `resources` directories.
 You can also tweak and use this script in your console
@@ -62,13 +62,18 @@ psql identity_manager -U postgres -F ./identity-manager/src/main/resources/ident
 
 Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running.
 
-### akka-http
+#### akka-http
 You can run each service separately, but we also we provided a SBT task called `runAll`.
 
-### Play
+#### Play
 Due to some issues with Play/sbt cooperation `metrics-collector` and `btc-ws` should be run separately.
 In order to run them in one sbt CLI instance use these commands:
-`; project btc-ws; run 9000`, `; project metrics-collector; run 5001`
+```
+; project btc-ws; run 9000
+```
+```
+; project metrics-collector; run 5001
+```
 
 Everything else should work out of the box. Enjoy!
 
