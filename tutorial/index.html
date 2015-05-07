@@ -113,12 +113,12 @@
 
     <h3>token-manager</h3>
     <p>
-
+        token-manager is a focal point of our authentication system. Authentication method services gets a fresh token for logged in users from it and business services verifies tokens presented by users to check identities. token-manager is built using previously presented layered architecture (routes &mdash; service &mdash; repository) but it misses gateway as it doesn't initiate communication with other services. It's the most important service in whole project so it's equipped with custom metrics reporting &mdash; there's <a href="#code/token-manager/src/main/scala/TokenManager.scala:31" class="shortcut">processing time reporting for every request</a> and <a href="#code/token-manager/src/main/scala/TokenManager.scala:35" class="shortcut">success/failure reporting for each action</a>. You'll learn how it works under the hood in <a href="http://localhost:8888/app/reactive-microservices/#tutorial/4" class="shortcut">the next chapter</a>.
     </p>
 
     <h3>session-manager</h3>
     <p>
-        
+        In the microservice architecture you usually have services that offer public API accessible by clients and internal API that is being used only by other services. Sometimes service offers some features that are public and others that are strictly private. That's the case with token-manager &mdash; you want your clients to be able to log out (delete token) but you don't want them to be able to add new token without going through one of auth services. This could be easily handled by a proxy server (like HAProxy or nginx) but sometimes you may want to do more complex transformations (ex. change API). In this case you should write a proxy service. Session manager is an exemplary <a href="#code/session-manager/src/main/scala/SessionManager.scala:28" class="shortcut">proxy service</a> that changes API and hides internals.
     </p>
 </div>
 <div>
