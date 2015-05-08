@@ -123,6 +123,36 @@
 </div>
 <div>
     <h2>Asynchronous HTTP stream &mdash; akka&ndash;http</h2>
+    <p>
+        Asynchronous communication, unlike synchronous, is not restricted by any timing signals. Asynchronous communication is usually implemented by message passing (vs request&ndash;response) &mdash; 'telling' (vs 'asking'). Asynchronous protocols usually scales better as communicating parties don't have to wait. However asynchronous message passing is unnatural, can get really complex thus it's very often complicated and hard to debug. Nonetheless, truly reactive systems should relay on asynchronous message&ndash;passing &mdash; as stated in Reactive Manifesto.
+    </p>
+
+    <h3>metrics-common</h3>
+    <p>
+        In <a href="http://localhost:8888/app/reactive-microservices/#tutorial/3" class="shortcut">the previous chapter</a> you saw nice interface for reporting metrics. Let's see how it's built. metrics-common is a shared library that consists of:
+        <ul>
+            <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:18" class="shortcut">Data structures</a> definition &amp; JSON mappers</li>
+            <li>
+                <a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:50" class="shortcut">Metrics trait</a> that:
+                <ul>
+                    <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:51" class="shortcut">hooks</a> into actor system of parent service,</li>
+                    <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:60" class="shortcut">establishes</a> long&ndash;lived HTTP connection to metrics-collector using Akka streams,</li>
+                    <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:61" class="shortcut">reestablishes</a> connection on failure,</li>
+                    <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:71" class="shortcut">defines</a> MetricsSupervisor actor that helps handling failures,</li>
+                    <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:86" class="shortcut">defines</a> MetricsManager actor publisher that actually puts metric messages in the stream via a bounded buffer.</li>
+                </ul>
+            </li>
+        </ul>
+        One may argue that this approach isn't asynchronous because we're using well&ndash;known HTTP requests. That's not true at all &mdash; we're using long&ndash;lived HTTP connection which provides us with an efficient stream and what's even more important, we're issuing requests without waiting for responses &mdash; we explicitly ignore them! This makes HTTP a one&ndash;way message stream and enables asynchronous processing. <br />
+        Another thing worth noting is fact we implemented metrics via a shared library that we declared a bad practise before because it introduces coupling. That's true but having nice and clean interface for reporting metrics simply outweighs the drawbacks. Still, if author of another microservice don't like that or don't use Scala, she can communicate with metrics-collector using HTTP and JSON, completely ignoring metrics-common library.
+    </p>
+
+    <h3>metrics-collector</h3>
+    <p>
+        metrics-collector is the receiving end of metrics subsystem. It's a Play app that receives metrics, stores them in a database and presents them to system administrators via websockets. Websockets part is really straightforward &mdash; <a href="#code/metrics-collector/app/controllers/MetricsCollector.scala" class="shortcut">it passes received metrics to websocket</a>. The receiving endpoint is much more interesting. It's of course built using Akka HTTP but with customized flow instead of typical routing. <a href="#code/metrics-collector/app/global/FlowInitializer.scala:34" class="shortcut">The flow</a> starts with broadcasting to <code>requestResponseFlow</code> and <code>requestMetricFlow</code>. <a href="#code/metrics-collector/app/global/FlowInitializer.scala:40" class="shortcut"><code>requestResponseFlow</code></a> simply maps every request to 200 HTTP response. <a href="#code/metrics-collector/app/global/FlowInitializer.scala:41" class="shortcut"><code>requestMetricFlow</code></a> turns requests into Metrics or in case of error to 'empty' element. <code>requestResponseFlow</code> is the actual output of the main flow while <code>requestMetricFlow</code> is being broadcasted to <code>wsSubscriber</code> and <code>journalerSubscriber</code>. <a href="#code/metrics-collector/app/global/FlowInitializer.scala:86" class="shortcut"><code>journalerSubscriber</code></a> is an actor subscriber that saves received metrics to MongoDB (ex. for further analysis). <a href="#code/metrics-collector/app/global/FlowInitializer.scala:71" class="shortcut"><code>wsSubscriber</code></a> is another actor subscriber that broadcasts received metrics to all connected websockets via Akka router.
+    </p>
+    <img src="tutorial/flow.png" />
+    <p>If you want to have a closer look at this schema <a href="tutorial/flow.png">go here</a>.</p>
 </div>
 <div>
     <h2>Asynchronous HTTP &mdash; websockets in Play</h2>
