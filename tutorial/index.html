@@ -237,12 +237,16 @@
 <div>
     <h2>Asynchronous messaging &mdash; Akka actors</h2>
     <p>
-
+        The 'go&ndash;to' tool when it comes to asynchronous message passing in Scala world is of course Akka. It has great capabilities and convenient interface but it comes with a cost. If you chose Akka as a communication protocol for a significant part of your project you're losing many of the benefits of polyglot approach. First of all, if you want to interoperate with Akka, you have to be on JVM and preferably use Java or Scala. Your code may also become more tightly coupled &mdash; Akka encourages usage of shared libraries and data structures. As a result, in certain cases it might be better to consider using lightweight message queues such as RabbitMQ or Kafka to avoid aforementioned drawbacks but if you're sure you won't be leaving JVM anytime soon, Akka is definitely the best choice. That was also our decision in the fully asynchronous part of our system.
     </p>
 
     <h3>btc-ws continued</h3>
     <p>
-
+        <a href="#code/btc-ws/app/controllers/BtcWs.scala:99" class="shortcut"><code>WebSocketHandler</code> actor</a> is modelled as a simple state machine to handle all the possible failures. Let's see a state diagram.
+    </p>
+    <img src="tutorial/btc-ws.png" />
+    <p>
+        When websocket connects and actor starts it sends a request to btc-users supervisor to get a remote command handler (<code>ActorRef</code>) (<code>waitForHandler</code> state), in case of failure it simply disconnects websocket &mdash; there's nothing we can do more here. After successful handler acquiring (<code>waitForSubscriptions</code> state), websocket actor requests a list of existing subscriptions for user &mdash; handler failure is the same as before. List of subscriptions causes websocket actor to enter operational handling of commands (which are routed to handler) and market events from handler (which are routed to websocket) &mdash; <code>handleUser</code> state; in case of timeout we assume something bad happened to handler so we switch back to <code>waitForHandler</code> state. Notice how clean protocol we've got &mdash; btc-ws microservice doesn't know any implementation details of btc-users &mdash; it just sends messages with clear semantics.
     </p>
 
     <h3>btc-users</h3>
