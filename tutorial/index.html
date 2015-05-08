@@ -103,7 +103,7 @@
             <li>Repository that handles interactions with local datastore (<a href="#code/auth-codecard/src/main/scala/Repository.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Repository.scala" class="shortcut">password</a>)</li>
             <li>Gateway that communicates with external services (identity-manager &amp; token-manager) (<a href="#code/auth-codecard/src/main/scala/Gateway.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Gateway.scala" class="shortcut">password</a>)</li>
         </ul>
-        There are a few things to note about these services. First of all, they provide similar functionalities but each authentication method has its own characteristics (ex. codecard needs card renewal, email&ndash;password needs password changing) &mdash; that's why they're completely separated. Another important thing is that structure introduces organizational complexity but abstraction allows to hide some implementation details and makes code easier to understand and maintain. Last but not least, careful reader might have noticed that both Gateway source codes looks really similar (<a href="#code/auth-codecard/src/main/scala/Gateway.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Gateway.scala" class="shortcut">password</a>). One may be tempted to write a shared library to reduce source code duplication. Shared libraries are generally discouraged when writing microservices because they introduce another layer of coupling. However, that's sometimes unavoidable &mdash; we'll see that in <a href="http://localhost:8888/app/reactive-microservices/#tutorial/4" class="shortcut">the next chapter</a>.
+        There are a few things to note about these services. First of all, they provide similar functionalities but each authentication method has its own characteristics (ex. codecard needs card renewal, email&ndash;password needs password changing) &mdash; that's why they're completely separated. Another important thing is that structure introduces organizational complexity but abstraction allows to hide some implementation details and makes code easier to understand and maintain. Last but not least, careful reader might have noticed that both Gateway source codes looks really similar (<a href="#code/auth-codecard/src/main/scala/Gateway.scala" class="shortcut">codecard</a>, <a href="#code/auth-password/src/main/scala/Gateway.scala" class="shortcut">password</a>). One may be tempted to write a shared library to reduce source code duplication. Shared libraries are generally discouraged when writing microservices because they introduce another layer of coupling. However, that's sometimes unavoidable &mdash; we'll see that in <a href="#tutorial/4" class="shortcut">the next chapter</a>.
     </p>
 
     <h3>auth-fb</h3>
@@ -113,7 +113,7 @@
 
     <h3>token-manager</h3>
     <p>
-        token-manager is a focal point of our authentication system. Authentication method services gets a fresh token for logged in users from it and business services verifies tokens presented by users to check identities. token-manager is built using previously presented layered architecture (routes &mdash; service &mdash; repository) but it misses gateway as it doesn't initiate communication with other services. It's the most important service in whole project so it's equipped with custom metrics reporting &mdash; there's <a href="#code/token-manager/src/main/scala/TokenManager.scala:31" class="shortcut">processing time reporting for every request</a> and <a href="#code/token-manager/src/main/scala/TokenManager.scala:35" class="shortcut">success/failure reporting for each action</a>. You'll learn how it works under the hood in <a href="http://localhost:8888/app/reactive-microservices/#tutorial/4" class="shortcut">the next chapter</a>.
+        token-manager is a focal point of our authentication system. Authentication method services gets a fresh token for logged in users from it and business services verifies tokens presented by users to check identities. token-manager is built using previously presented layered architecture (routes &mdash; service &mdash; repository) but it misses gateway as it doesn't initiate communication with other services. It's the most important service in whole project so it's equipped with custom metrics reporting &mdash; there's <a href="#code/token-manager/src/main/scala/TokenManager.scala:31" class="shortcut">processing time reporting for every request</a> and <a href="#code/token-manager/src/main/scala/TokenManager.scala:35" class="shortcut">success/failure reporting for each action</a>. You'll learn how it works under the hood in <a href="#tutorial/4" class="shortcut">the next chapter</a>.
     </p>
 
     <h3>session-manager</h3>
@@ -129,7 +129,7 @@
 
     <h3>metrics-common</h3>
     <p>
-        In <a href="http://localhost:8888/app/reactive-microservices/#tutorial/3" class="shortcut">the previous chapter</a> you saw nice interface for reporting metrics. Let's see how it's built. metrics-common is a shared library that consists of:
+        In <a href="#tutorial/3" class="shortcut">the previous chapter</a> you saw nice interface for reporting metrics. Let's see how it's built. metrics-common is a shared library that consists of:
         <ul>
             <li><a href="#code/metrics-common/src/main/scala/metrics/common/Metrics.scala:18" class="shortcut">Data structures</a> definition &amp; JSON mappers</li>
             <li>
@@ -156,12 +156,36 @@
 </div>
 <div>
     <h2>Asynchronous HTTP &mdash; websockets in Play</h2>
+    <p>
+        Another way to provide asynchronicity in the world of webservers are websockets. Websockets are similar to TCP sockets but additionally they provide minimal framing. This makes them ideal for asynchronous message passing. You've seen them in action in <a href="#code/metrics-collector/app/controllers/MetricsCollector.scala" class="shortcut">metrics-collector</a> but this time we'll analyse more complex service.
+    </p>
+
+    <h3>btc-ws</h3>
+    <p>
+        btc-ws is a façade service for business part of our application. It allows users, after authentication, to manage subscriptions for BTC market events and receive alerts. While one could argue that user's actions can be handled synchronously, market events are asynchronous and should be handled like that. Websockets are perfect fit for such case &mdash; otherwise we would have to use HTTP polling which is inefficient. First thing to notice in the <a href="#code/btc-ws/app/controllers/BtcWs.scala" class="shortcut">btc-ws code</a> is <a href="#code/btc-ws/app/controllers/BtcWs.scala:17" class="shortcut">a long block of mappings</a> needed for a websocket message &mdash; scala object translations. <a href="#code/btc-ws/app/controllers/BtcWs.scala:72" class="shortcut">Websocket initialization code</a> is really straightforward &mdash; it retrieves user's identity based on presented token and opens websocket handled by <code>WebSocketHandler</code> actor. You'll learn what happens there in <a href="#tutorial/6" class="shortcut">the next chapter</a>.
+    </p>
 </div>
 <div>
     <h2>Asynchronous messaging &mdash; Akka actors</h2>
+    <p>
+
+    </p>
+
+    <h3>btc-ws continued</h3>
+    <p>
+
+    </p>
+
+    <h3>btc-users</h3>
+    <p>
+
+    </p>
 </div>
 <div>
     <h2>Summary</h2>
+    <p>
+        
+    </p>
 </div>
 </body>
 </html>
