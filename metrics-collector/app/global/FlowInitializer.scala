@@ -34,11 +34,11 @@ object FlowInitializer extends GlobalSettings {
     val requestFlow = Flow() { implicit b =>
       import FlowGraph.Implicits._
 
-      val wsSubscriber = b.add(Sink[Metric](ActorsWs.props))
-      val journalerSubscriber = b.add(Sink[Metric](ActorJournaler.props(app.configuration)))
+      val wsSubscriber = b.add(Sink.actorSubscriber[Metric](ActorsWs.props))
+      val journalerSubscriber = b.add(Sink.actorSubscriber[Metric](ActorJournaler.props(app.configuration)))
 
       val requestResponseFlow = b.add(Flow[HttpRequest].map(_ => HttpResponse(OK)))
-      val requestMetricFlow = b.add(Flow[HttpRequest].mapAsync { request =>
+      val requestMetricFlow = b.add(Flow[HttpRequest].mapAsync(1) { request =>
         Unmarshal(request.entity).to[Metric].map(Seq(_)).fallbackTo(Future.successful(Seq.empty[Metric]))
       }.mapConcat(identity))
 
