@@ -23,27 +23,29 @@ object AuthFb extends App with JsonProtocols with Config {
 
   Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("auth-fb") {
-      (path("register" / "fb") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
-        complete {
-          service.register(authResponse, tokenValue) match {
-            case SuccessT(f) => f.map[ToResponseMarshallable] {
-              case Right(identity) => Created -> identity
-              case Left(errorMessage) => BadRequest -> errorMessage
+      pathPrefix("auth-fb") {
+        (path("register") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
+          complete {
+            service.register(authResponse, tokenValue) match {
+              case SuccessT(f) => f.map[ToResponseMarshallable] {
+                case Right(identity) => Created -> identity
+                case Left(errorMessage) => BadRequest -> errorMessage
+              }
+              case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
+              case _ => InternalServerError
             }
-            case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
-            case _ => InternalServerError
           }
-        }
-      } ~
-      (path("login" / "fb") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
-        complete {
-          service.login(authResponse, tokenValue) match {
-            case SuccessT(f) => f.map[ToResponseMarshallable] {
-              case Right(token) => Created -> token
-              case Left(errorMessage) => BadRequest -> errorMessage
+        } ~
+        (path("login") & pathEndOrSingleSlash & post & entity(as[AuthResponse]) & optionalHeaderValueByName("Auth-Token")) { (authResponse, tokenValue) =>
+          complete {
+            service.login(authResponse, tokenValue) match {
+              case SuccessT(f) => f.map[ToResponseMarshallable] {
+                case Right(token) => Created -> token
+                case Left(errorMessage) => BadRequest -> errorMessage
+              }
+              case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
+              case _ => InternalServerError
             }
-            case FailureT(e: FacebookException) => Unauthorized -> e.getMessage
-            case _ => InternalServerError
           }
         }
       }

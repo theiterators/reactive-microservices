@@ -28,35 +28,37 @@ object AuthCodeCardCard extends App with JsonProtocols with Config {
 
   Http().bindAndHandle(interface = interface, port = port, handler = {
     logRequestResult("auth-codecard") {
-      (path("register" / "codecard" ) & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
-        complete {
-          service.register(tokenValue).map[ToResponseMarshallable] {
-            case Right(response) => Created -> response
-            case Left(errorMessage) => BadRequest -> errorMessage
+      pathPrefix("auth-codecard") {
+        (path("register") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token")) { (tokenValue) =>
+          complete {
+            service.register(tokenValue).map[ToResponseMarshallable] {
+              case Right(response) => Created -> response
+              case Left(errorMessage) => BadRequest -> errorMessage
+            }
           }
-        }
-      } ~
-      (path("login" / "codecard" / "activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
-        complete {
-          service.activateCode(request).map[ToResponseMarshallable] {
-            case Right(response) => OK -> response
-            case Left(errorMessage) => BadRequest -> errorMessage
+        } ~
+        (path("activate") & pathEndOrSingleSlash & post & entity(as[ActivateCodeRequest])) { (request) =>
+          complete {
+            service.activateCode(request).map[ToResponseMarshallable] {
+              case Right(response) => OK -> response
+              case Left(errorMessage) => BadRequest -> errorMessage
+            }
           }
-        }
-      } ~
-      (path("login" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
-        complete {
-          service.login(request, tokenValue).map[ToResponseMarshallable] {
-            case Right(response) => Created -> response
-            case Left(errorMessage) => BadRequest -> errorMessage
+        } ~
+        (path("login") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[LoginRequest])) { (tokenValue, request) =>
+          complete {
+            service.login(request, tokenValue).map[ToResponseMarshallable] {
+              case Right(response) => Created -> response
+              case Left(errorMessage) => BadRequest -> errorMessage
+            }
           }
-        }
-      } ~
-      (path("generate" / "codecard") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
-        complete {
-          service.getCodeCard(request, tokenValue).map[ToResponseMarshallable] {
-            case Right(response) => OK -> response
-            case Left(errorMessage) => BadRequest -> errorMessage
+        } ~
+        (path("generate") & pathEndOrSingleSlash & post & optionalHeaderValueByName("Auth-Token") & entity(as[GetCodeCardRequest])) { (tokenValue, request) =>
+          complete {
+            service.getCodeCard(request, tokenValue).map[ToResponseMarshallable] {
+              case Right(response) => OK -> response
+              case Left(errorMessage) => BadRequest -> errorMessage
+            }
           }
         }
       }
