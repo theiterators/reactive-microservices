@@ -9,7 +9,6 @@ version := "1.0"
 
 lazy val `reactive-microservices` = (project in file("."))
 
-lazy val `frontend-server` = project in file("frontend-server")
 
 lazy val metricsCommon = project in file("metrics-common")
 
@@ -42,7 +41,6 @@ val cleanAll = taskKey[Unit]("Cleans all subprojects")
 compileAll := {
   fork in compile := true
 
-  (compile in Compile in `frontend-server`).toTask.value
   (compile in Compile in `token-manager`).toTask.value
   (compile in Compile in `session-manager`).toTask.value
   (compile in Compile in `identity-manager`).toTask.value
@@ -53,7 +51,6 @@ compileAll := {
 }
 
 cleanAll := {
-  (clean in Compile in `frontend-server`).toTask.value
   (clean in Compile in `token-manager`).toTask.value
   (clean in Compile in `session-manager`).toTask.value
   (clean in Compile in `identity-manager`).toTask.value
@@ -65,7 +62,6 @@ cleanAll := {
 
 
 runAll := {
-  (run in Compile in `frontend-server`).evaluated
   (run in Compile in `token-manager`).evaluated
   (run in Compile in `session-manager`).evaluated
   (run in Compile in `identity-manager`).evaluated
