@@ -8,7 +8,7 @@ To feel comfortable while playing with this template, make sure you know basics 
 
 ## Structure
 
-This activator template consists of 10 runnable subprojects — the microservices:
+This activator template consists of 9 runnable subprojects — the microservices:
  * auth ones:
    * `auth-codecard`
    * `auth-fb`
@@ -21,7 +21,6 @@ This activator template consists of 10 runnable subprojects — the microservic
    * `btc-ws`
  * miscellaneous ones:
    * `metrics-collector`
-   * `frontend-server`
    
 They uses different communication methods, different databases, and different frameworks.
 

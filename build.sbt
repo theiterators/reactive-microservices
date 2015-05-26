@@ -7,9 +7,8 @@ organization := "com.theiterators"
 
 version := "1.0"
 
-lazy val `reactive-microservices` = (project in file("."))
-
-lazy val `frontend-server` = project in file("frontend-server")
+lazy val `reactive-microservices` = (project in file(".")).aggregate(metricsCommon, `metrics-collector`, `token-manager`,
+  `session-manager`, `identity-manager`, `auth-fb`, `auth-codecard`, `auth-password`, btcCommon, `btc-ws`, `btc-users`)
 
 lazy val metricsCommon = project in file("metrics-common")
 
@@ -35,37 +34,7 @@ lazy val `btc-users` = (project in file("btc-users")).dependsOn(btcCommon)
 
 val runAll = inputKey[Unit]("Runs all subprojects")
 
-val compileAll = taskKey[Unit]("Compiles all subprojects")
-
-val cleanAll = taskKey[Unit]("Cleans all subprojects")
-
-compileAll := {
-  fork in compile := true
-
-  (compile in Compile in `frontend-server`).toTask.value
-  (compile in Compile in `token-manager`).toTask.value
-  (compile in Compile in `session-manager`).toTask.value
-  (compile in Compile in `identity-manager`).toTask.value
-  (compile in Compile in `auth-fb`).toTask.value
-  (compile in Compile in `auth-codecard`).toTask.value
-  (compile in Compile in `auth-password`).toTask.value
-  (compile in Compile in `btc-users`).toTask.value
-}
-
-cleanAll := {
-  (clean in Compile in `frontend-server`).toTask.value
-  (clean in Compile in `token-manager`).toTask.value
-  (clean in Compile in `session-manager`).toTask.value
-  (clean in Compile in `identity-manager`).toTask.value
-  (clean in Compile in `auth-fb`).toTask.value
-  (clean in Compile in `auth-codecard`).toTask.value
-  (clean in Compile in `auth-password`).toTask.value
-  (clean in Compile in `btc-users`).toTask.value
-}
-
-
 runAll := {
-  (run in Compile in `frontend-server`).evaluated
   (run in Compile in `token-manager`).evaluated
   (run in Compile in `session-manager`).evaluated
   (run in Compile in `identity-manager`).evaluated
