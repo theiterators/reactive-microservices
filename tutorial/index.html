@@ -5,21 +5,35 @@
 </head>
 <body>
 <div>
-    <h2>Reactive microservices</h2>
+    <h2>1. Reactive microservices</h2>
 
     <p>
         <i>Reactive microservices</i> is an activator template completely devoted to microservices architecture. It lets you learn about microservices in general &mdash; different patterns, communication protocols and 'tastes' of microservices. All these concepts are demonstrated using Scala, Akka, Play and other tools from Scala ecosystem. For the sake of clarity, we skipped topics related to deployment and operations &mdash; that's a great subject for another big activator template.
     </p>
 
-    <h3>Prerequisites</h3>
+    <p>
+        <ul>
+            <li>See the <a href="#tutorial/1" class="shortcut">prerequisities</a> you will need to fully understand the template.</li>
+            <li>See the <a href="#tutorial/2" class="shortcut">build info needed to run the template</a>.</li>
+            <li>If you wan't to know more about microservices, see: <a href="#tutorial/4" class="shortcut">what are microservices</a> section.</li>
+            <li>If you're interested in the systems architecture details, see: <a href="#tutorial/7" class="shortcut">the system blueprint</a> of the tutorial.</li>
+        </ul>
+    </p>
+</div>
+<div>
+    <h2>1.1. Prerequisites</h2>
 
     <p>
         To feel comfortable while playing with this template, make sure you know basics of Akka HTTP which is a cornerstone of this project. We recently released an <a href="https://typesafe.com/activator/template/akka-http-microservice">Akka HTTP activator template</a> that may help you start. At least brief knowledge of <a href="https://typesafe.com/activator/template/akka-sample-remote-scala">Akka remoting</a>, <a href="https://typesafe.com/activator/template/akka-sample-persistence-scala">Akka persistence</a>, <a href="https://typesafe.com/activator/template/akka-stream-scala">Akka streams</a> and <a href="https://typesafe.com/activator/template/anonymous-chat">Play Framework websockets</a> is also highly recommended. Anyway, don't worry &mdash; all these technologies (and more!) will be discussed on the way but we won't dig into the details.
     </p>
-
-    <h3>Structure</h3>
+    <ul>
+        <li>Go to <a href="#tutorial/2" class="shortcut">build overview</a></li>
+    </ul>
+</div>
+<div>
+    <h2>1.2. Project build overview</h2>
     <p>
-        This activator template consists of 10 runnable subprojects &mdash; the microservices:
+        This activator template consists of 10 runnable subprojects &mdash; the microservices:
         <ul>
             <li>
                 auth ones:
@@ -49,8 +63,12 @@
         </ul>
         They uses different communication methods, different databases, and different frameworks.
     </p>
-
-    <h3>Setup</h3>
+    <ul>
+        <li>Go to <a href="#tutorial/3" class="shortcut">setup instructions</a>.</li>
+    </ul>
+</div>
+<div>
+    <h2>1.3. Setup instructions</h2>
 
     <h4>Review the configuration files</h4>
     <p>Take some time to review <code>application.conf</code> files that are located in <code>resource</code> subdirectory of each microservice.</p>
@@ -91,15 +109,25 @@
         <code>; project metrics-collector; run 5001</code><br />
         Everything else should work out of the box. Enjoy!
     </p>
+
+    <ul>
+        <li>See <a href="#tutorial/4" class="shortcut">what are microservices</a>,</li>
+        <li>or <a href="#tutorial/7" class="shortcut">the system blueprint</a>.</li>
+    </ul>
 </div>
 <div>
-    <h2>What are microservices?</h2>
+    <h2>2. What are microservices?</h2>
 
     <p>
         There's no formal or widespread definition of a microservice. However usually microservices are defined as an software architectural style in which system is composed of multiple services. Those services are small (or at least smaller than in typical, monolith applications), can be independently deployed and they communicate using (lightweight) protocols. Well&ndash;defined microservice should be organized around business capabilities or to put it in Domain&ndash;Driven Design wording &mdash; should encapsulate Bounded Context. Sometimes it is said that microservices are implementation of Single Responsibility Principle in architecture.
     </p>
 
-    <h3>Opportunities</h3>
+    <ul>
+        <li>See <a href="#tutorial/5" class="shortcut">opportunities</a> and <a href="#tutorial/6" class="shortcut">dillemas</a> of using microservice architecture.</li>
+    </ul>
+</div>
+<div>
+    <h2>2.1. Opportunities</h2>
 
     <p>
         Applications based on a microservice architecture are basically distributed systems. This means that they can scale horizontally in a much more flexible way than monolithic systems &mdash; instead of replicating whole heavyweight process one can spawn multiple instances of services that are under load. This guarantees better hardware utilization &mdash; money savings. Another important consequence of moving from monolith to microservices is the need of designing for failure which can result in a truly reactive system. Like it or not, while designing a distributed system you have to take failure into account &mdash; otherwise you will see your system falling apart.
@@ -109,15 +137,23 @@
         <br />
         Shorter time&ndash;to&ndash;market stems not only from well&ndash;organized teams but also from other features of MSA. First of all, microservices are supposed to be easier to understand (thus maintain) than monolithic systems. Smaller size also means that microservices can be easily rewritten (or simply disposed) instead of being refactored which usually is expansive and results in sub&ndash;optimal code quality. Autonomy of teams enables polyglot approach which provides better utilization of tools and bounded context is supposed to increase code reusability. Microservices should also be fun for developers, as everything that's new and challenging.
     </p>
-
-    <h3>Dilemmas &amp; problems</h3>
-
-    <p>
-        A shift from monolithic to microservices architecture is a serious step. Distributed systems are totally different than monolithic ones and have their own dilemmas and problems. First and foremost microservices are all about communication and protocols. One should be aware that microservices doesn't magically suppress complexity &mdash; they just move it from code to communication layer. Different communication protocols (synchronous and asynchronous) and transport guarantees will be the main subject of this tutorial (see chapters  <a href="#tutorial/3" class="shortcut">4</a>,  <a href="#tutorial/4" class="shortcut">5</a>,  <a href="#tutorial/5" class="shortcut">6</a>, <a href="#tutorial/5" class="shortcut">7</a>). Another important subject worth mentioning while discussing microservices is a polyglot persistence &mdash; how to embrace multiple different data stores and not lose consistency and performance. You can check out this approach in our activator template in <a href="#tutorial/2" class="shortcut">chapter 3</a>. Very common question asked while developing microservices is 'how big is a microservice?' &mdash; we'll discuss it in <a href="#tutorial/2" class="shortcut">chapter 3</a>. Microservice approach requires some boilerplate; one may be tempted to share code using shared libraries which introduce coupling &mdash; why and when would you like to do that? See <a href="#tutorial/4" class="shortcut">chapter 5</a>. There's also a multitude of the problems which are out of the scope of this template like: testing (why, when and how to do it?), polyglot approach (is it worth the cost?), operations, contract management (what's my API, who are my collaborators, how can I contact them?), API versioning (how to stay backward compatible?), logging &amp; debugging and security. Feel encouraged to enrich this activator template with suitable examples and tutorials &mdash; and let us know!
-    </p>
+    <ul>
+        <li>See the <a href="#tutorial/6" class="shortcut">dillemas and problems with microservice architecture </a></li>
+    </ul>
 </div>
 <div>
-    <h2>System blueprint</h2>
+    <h2>2.2. Dilemmas and problems</h2>
+
+    <p>
+        A shift from monolithic to microservices architecture is a serious step. Distributed systems are totally different than monolithic ones and have their own dilemmas and problems. First and foremost microservices are all about communication and protocols. One should be aware that microservices doesn't magically suppress complexity &mdash; they just move it from code to communication layer. Different communication protocols (synchronous and asynchronous) and transport guarantees will be the main subject of this tutorial (see chapters  <a href="#tutorial/8" class="shortcut">3.1.</a>,  <a href="#tutorial/9" class="shortcut">3.2.</a>,  <a href="#tutorial/10" class="shortcut">3.3.</a>, <a href="#tutorial/11" class="shortcut">3.4.</a>). Another important subject worth mentioning while discussing microservices is a polyglot persistence &mdash; how to embrace multiple different data stores and not lose consistency and performance. You can check out this approach in our activator template in <a href="#tutorial/7" class="shortcut">chapter 3</a>. Very common question asked while developing microservices is 'how big is a microservice?' &mdash; we'll discuss it in <a href="#tutorial/7" class="shortcut">chapter 3</a>. Microservice approach requires some boilerplate; one may be tempted to share code using shared libraries which introduce coupling &mdash; why and when would you like to do that? See <a href="#tutorial/8" class="shortcut">chapter 3.1</a>. There's also a multitude of the problems which are out of the scope of this template like: testing (why, when and how to do it?), polyglot approach (is it worth the cost?), operations, contract management (what's my API, who are my collaborators, how can I contact them?), API versioning (how to stay backward compatible?), logging &amp; debugging and security. Feel encouraged to enrich this activator template with suitable examples and tutorials &mdash; and let us know!
+    </p>
+
+    <ul>
+        <li>See the <a href="#tutorial/7" class="shortcut">system blueprint</a></li>
+    </ul>
+</div>
+<div>
+    <h2>3. System blueprint</h2>
 
     <p>
         To present different concepts related to microservices we built an authentication system. The idea behind it is really simple &mdash; you can sign in/sign up using arbitrarily chosen authentication methods (currently they're email&ndash;password, Facebook Oauth, codecard). Number of used authentication methods indicates user's token strength. User that presents a valid authentication token can access business applications behind the authentication system. To test if our authentication system actually works we integrated a simple application that after singing in lets users subscribe and get notifications in real&ndash;time about bitcoin market events such as rate change, volume above/below certain level etc.
@@ -142,9 +178,17 @@
 
     Spend some time analyzing communication paths, protocols and data stores &mdash; it might be useful during our tour around each service of the system.
     </p>
+
+    <ul>
+        <li>See the <a href="#tutorial/8" class="shortcut">synchronous HTTP communication method</a>,</li>
+        <li>the <a href="#tutorial/9" class="shortcut">asynchronous HTTP streams communication</a>,</li>
+        <li>the <a href="#tutorial/10" class="shortcut">asynchronous HTTP websockets communication</a>.</li>
+        <li>or the <a href="#tutorial/11" class="shortcut">asynchronous Akka message communication</a>.</li>
+    </ul>
+
 </div>
 <div>
-    <h2>Synchronous HTTP &mdash; akka&ndash;http</h2>
+    <h2>3.1. Synchronous HTTP &mdash; akka&ndash;http</h2>
     <p>
         Synchronous communication is a data transfer method in which receiving and sending are governed by strict timing signals. It's usually takes the form of a request&ndash;response protocol &mdash; party sends data only when it's explicitly asked for it. That's how typical HTTP service works. Synchronous protocols are very popular because they're easy to understand and analyze. However they have one significant drawback &mdash; they don't scale well. First of all, synchronous protocols introduce liveness issues &mdash; when you ask for something you have to be prepared that your call may explicitly fail or even worse you may never get any response at all (that's why you need timeouts). Secondly, usually if you ask for something, you have to wait for the response to continue processing. Several such calls and you'll end up waiting most of the time instead of doing something actually useful. Having said that, world wide web we use daily is mostly synchronous &mdash; you click 'Log in' button and you wait for 'Login successful' confirmation box. Request&ndash;response &mdash; that's how vanilla HTTP works. Synchronous communication is also useful (well, almost unavoidable) while designing microservice&ndash;based system &mdash; learn why and when.
     </p>
@@ -182,16 +226,19 @@
 
     <h3>token-manager</h3>
     <p>
-        token-manager is a focal point of our authentication system. Authentication method services gets a fresh token for logged in users from it and business services verifies tokens presented by users to check identities. token-manager is built using previously presented layered architecture (routes &mdash; service &mdash; repository) but it misses gateway as it doesn't initiate communication with other services. It's the most important service in whole project so it's equipped with custom metrics reporting &mdash; there's <a href="#code/token-manager/src/main/scala/TokenManager.scala:31" class="shortcut">processing time reporting for every request</a> and <a href="#code/token-manager/src/main/scala/TokenManager.scala:35" class="shortcut">success/failure reporting for each action</a>. You'll learn how it works under the hood in <a href="#tutorial/4" class="shortcut">the next chapter</a>.
+        token-manager is a focal point of our authentication system. Authentication method services gets a fresh token for logged in users from it and business services verifies tokens presented by users to check identities. token-manager is built using previously presented layered architecture (routes &mdash; service &mdash; repository) but it misses gateway as it doesn't initiate communication with other services. It's the most important service in whole project so it's equipped with custom metrics reporting &mdash; there's <a href="#code/token-manager/src/main/scala/TokenManager.scala:31" class="shortcut">processing time reporting for every request</a> and <a href="#code/token-manager/src/main/scala/TokenManager.scala:35" class="shortcut">success/failure reporting for each action</a>. You'll learn how it works under the hood in <a href="#tutorial/9" class="shortcut">the next chapter</a>.
     </p>
 
     <h3>session-manager</h3>
     <p>
         In the microservice architecture you usually have services that offer public API accessible by clients and internal API that is being used only by other services. Sometimes service offers some features that are public and others that are strictly private. That's the case with token-manager &mdash; you want your clients to be able to log out (delete token) but you don't want them to be able to add new token without going through one of auth services. This could be easily handled by a proxy server (like HAProxy or nginx) but sometimes you may want to do more complex transformations (ex. change API). In this case you should write a proxy service. Session manager is an exemplary <a href="#code/session-manager/src/main/scala/SessionManager.scala:28" class="shortcut">proxy service</a> that changes API and hides internals.
     </p>
+    <ul>
+        <li>See the <a href="#tutorial/9" class="shortcut">asynchronous HTTP stream  communication</a>.</li>
+    </ul>
 </div>
 <div>
-    <h2>Asynchronous HTTP stream &mdash; akka&ndash;http</h2>
+    <h2>3.2. Asynchronous HTTP stream &mdash; akka&ndash;http</h2>
     <p>
         Asynchronous communication, unlike synchronous, is not restricted by any timing signals. Asynchronous communication is usually implemented by message passing (vs request&ndash;response) &mdash; 'telling' (vs 'asking'). Asynchronous protocols usually scales better as communicating parties don't have to wait. However asynchronous message passing is unnatural, can get really complex thus it's very often complicated and hard to debug. Nonetheless, truly reactive systems should relay on asynchronous message&ndash;passing &mdash; as stated in Reactive Manifesto.
     </p>
@@ -222,20 +269,28 @@
     </p>
     <img src="tutorial/flow.png" />
     <p>If you want to have a closer look at this schema <a href="tutorial/flow.png">go here</a>.</p>
+
+    <ul>
+        <li>See the <a href="#tutorial/10" class="shortcut">asynchronous HTTP websocket communication</a>.</li>
+    </ul>
 </div>
 <div>
-    <h2>Asynchronous HTTP &mdash; websockets in Play</h2>
+    <h2>3.3. Asynchronous HTTP &mdash; websockets in Play</h2>
     <p>
         Another way to provide asynchronicity in the world of webservers are websockets. Websockets are similar to TCP sockets but additionally they provide minimal framing. This makes them ideal for asynchronous message passing. You've seen them in action in <a href="#code/metrics-collector/app/controllers/MetricsCollector.scala" class="shortcut">metrics-collector</a> but this time we'll analyse more complex service.
     </p>
 
     <h3>btc-ws</h3>
     <p>
-        btc-ws is a façade service for business part of our application. It allows users, after authentication, to manage subscriptions for BTC market events and receive alerts. While one could argue that user's actions can be handled synchronously, market events are asynchronous and should be handled like that. Websockets are perfect fit for such case &mdash; otherwise we would have to use HTTP polling which is inefficient. First thing to notice in the <a href="#code/btc-ws/app/controllers/BtcWs.scala" class="shortcut">btc-ws code</a> is <a href="#code/btc-ws/app/controllers/BtcWs.scala:17" class="shortcut">a long block of mappings</a> needed for a websocket message &mdash; scala object translations. <a href="#code/btc-ws/app/controllers/BtcWs.scala:72" class="shortcut">Websocket initialization code</a> is really straightforward &mdash; it retrieves user's identity based on presented token and opens websocket handled by <code>WebSocketHandler</code> actor. You'll learn what happens there in <a href="#tutorial/6" class="shortcut">the next chapter</a>.
+        btc-ws is a façade service for business part of our application. It allows users, after authentication, to manage subscriptions for BTC market events and receive alerts. While one could argue that user's actions can be handled synchronously, market events are asynchronous and should be handled like that. Websockets are perfect fit for such case &mdash; otherwise we would have to use HTTP polling which is inefficient. First thing to notice in the <a href="#code/btc-ws/app/controllers/BtcWs.scala" class="shortcut">btc-ws code</a> is <a href="#code/btc-ws/app/controllers/BtcWs.scala:17" class="shortcut">a long block of mappings</a> needed for a websocket message &mdash; scala object translations. <a href="#code/btc-ws/app/controllers/BtcWs.scala:72" class="shortcut">Websocket initialization code</a> is really straightforward &mdash; it retrieves user's identity based on presented token and opens websocket handled by <code>WebSocketHandler</code> actor. You'll learn what happens there in <a href="#tutorial/11" class="shortcut">the next chapter</a>.
     </p>
+
+    <ul>
+        <li>See the <a href="#tutorial/11" class="shortcut">asynchronous messaging with Akka actors</a>.</li>
+    </ul>
 </div>
 <div>
-    <h2>Asynchronous messaging &mdash; Akka actors</h2>
+    <h2>3.4. Asynchronous messaging &mdash; Akka actors</h2>
     <p>
         The 'go&ndash;to' tool when it comes to asynchronous message passing in Scala world is of course Akka. It has great capabilities and convenient interface but it comes with a cost. If you chose Akka as a communication protocol for a significant part of your project you're losing many of the benefits of polyglot approach. First of all, if you want to interoperate with Akka, you have to be on JVM and preferably use Java or Scala. Your code may also become more tightly coupled &mdash; Akka encourages usage of shared libraries and data structures. As a result, in certain cases it might be better to consider using lightweight message queues such as RabbitMQ or Kafka to avoid aforementioned drawbacks but if you're sure you won't be leaving JVM anytime soon, Akka is definitely the best choice. That was also our decision in the fully asynchronous part of our system.
     </p>
@@ -253,12 +308,17 @@
     <p>
         btc-users is a microservice completely based on Akka. It consists of three actors types: <code>UsersManager</code>, <code>UserHandler</code> and <code>DataFetcher</code>. <a href="#code/btc-users/src/main/scala/UsersManager.scala:10" class="shortcut"><code>UsersManager</code></a> plays a role of supervisor. It responds to requests from btc-ws to create a handler (<code>UserHandler</code> actor) for user with given id. <a href="#code/btc-users/src/main/scala/UserHandler.scala:20" class="shortcut"><code>UserHandler</code></a> is where all the heavy lifting happens. It's a persistent actor that processes subscription requests and issues alarms based on ticker from BTC market. First and foremost we once again leveraged the polyglot persistence approach &mdash; we used Akka persistence to persist subscription settings. Subscribe/unsubscribe actions are a perfect cases for event sourcing and that's exactly how we implemented it &mdash; see <a href="#code/btc-users/src/main/scala/UserHandler.scala:38" class="shortcut"><code>receiveCommand</code></a> and <a href="#code/btc-users/src/main/scala/UserHandler.scala:33" class="shortcut"><code>receiveRecover</code></a>. Besides handling subscribe/unsubscribe requests, <code>UserHandler</code> responses to <code>QuerySubscriptions</code> and broadcasts market alarms. <code>UserHandler</code> actor manages its lifetime similar to how btc-ws does &mdash; by heartbeats and timeouts. <a href="#code/btc-users/src/main/scala/DataFetcher.scala:7" class="shortcut"><code>DataFetcher</code></a> is a very simple actor that every few seconds fetches BTC ticker and broadcasts it to all <code>UserHandler</code> actors via Akka router. That's it &mdash; that's how subscriptions are managed and market alarms are issued.
     </p>
+
+    <ul>
+        <li>See the <a href="#tutorial/12" class="shortcut">tutorial summary</a>.</li>
+    </ul>
 </div>
 <div>
-    <h2>Summary</h2>
+    <h2>4. Summary</h2>
     <p>
         During our tour of microservices we hopefully showed the full power that comes with mixing different approaches, techniques and tools. Scala's toolbelt (and especially Akka and Play) is, without a question, ready for building reactive microservice&ndash;based distributed systems. However before migrating all your project to MSA make sure you deeply understand all dilemmas and problems of microservices, particularly ones we had to omit to keep this activator template concise like: eventual consistency, testing, operations &amp; deployment, contract managing, versioning, monitoring, logging &amp; debugging and security. Good luck, have fun and let us know about your adventures on the microservice way!
     </p>
+
 </div>
 </body>
 </html>
