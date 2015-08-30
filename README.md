@@ -1,5 +1,7 @@
 # Reactive microservices
 
+[![Join the chat at https://gitter.im/theiterators/reactive-microservices](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/theiterators/reactive-microservices?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Reactive microservices is an Typesafe Activator Template completely devoted to microservices architecture. It lets you learn about microservices in general - different patterns, communication protocols and 'tastes' of microservices. All these concepts are demonstrated using Scala, Akka, Play and other tools from Scala ecosystem. For the sake of clarity, we skipped topics related to deployment and operations.
 
 ## Prerequisites
