@@ -70,38 +70,26 @@
     <h2>1.3. Setup instructions</h2>
 
     <h4>Review the configuration files</h4>
-    <p>Take some time to review <code>application.conf</code> files that are located in <code>resource</code> subdirectory of each microservice.</p>
+    <p>Take some time to review <code>application.conf</code> files that are located in <code>resource</code> subdirectory of each microservice. You can also look at <code>docker-compose.yml</code> file, which contains docker preconfigurated images for all the required databases.</p>
 
-    <h4>Create and configure Postgres databases</h4>
-    <p>
-        The default names of the DBs that need to be created are: <code>auth_codecard</code>, <code>auth_password</code>, and <code>identity_manager</code>. If you want to use non&ndash;default names please tweak the <code>application.conf</code> files.
+    <h4>Run migrations (You don't need to do this step if you want to use our docker container)</h4>
+    <p>For <code>auth-codecard</code>, <code>identity-manager</code> and <code>auth-password</code> you need to run the SQL migration scripts which are located in postgres directory. If you want to use non-default names please tweak the `application.conf` files.
+    You can also tweak and use this script in your console:
 
-        Scripts for quick setup:
-        <br />
-        <code>createdb auth_codecard -U postgres</code><br />
-        <code>createdb auth_password -U postgres</code><br />
-        <code>createdb identity_manager -U postgres</code>
-    </p>
-
-    <h4>Run migrations</h4>
-    <p>
-        For auth-codecard, identity-manager and auth-password you need to run the SQL migration scripts which are located in relevant <code>resources</code> directories.
-        You can also tweak and use this script in your console:
-
-        <br />
-        <code>cd /where/this/activator/template/is/located/</code>
-        <code>psql auth_codecard -U postgres -f ./auth-codecard/src/main/resources/init.sql &&<br />
-        psql auth_password -U postgres -f ./auth-password/src/main/resources/auth_entry.sql &&<br />
-        psql identity_manager -U postgres -f ./identity-manager/src/main/resources/identity.sql</code>
+    <br />
+        <code>cd /where/this/activator/template/is/located/<br />
+            psql -h localhost -U postgres -f ./postgres/init.sql &&<br />
+            psql -h localhost -U postgres -f ./postgres/auth_entry.sql &&<br />
+            psql -h localhost -U postgres -f ./postgres/identity.sql</code>
     </p>
 
     <h3>Running</h3>
-    <p>Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running.</p>
+    <p>Run <code>docker-compose</code> up in project main directory to lunch databases, or if you are using your own database instances, make sure you have PostgreSQL, MongoDB and Redis up and running.</p>
 
     <h4>Akka HTTP</h4>
     <p>You can run each service separately, but we also we provided a SBT task called <code>runAll</code>.</p>
 
-    <h4>Play</h4>
+    <h4>Play</h4>psql identity_manager -U postgres -f ./identity-manager/src/main/resources/identity.sql
     <p>Due to some issues with Play/sbt cooperation <code>metrics-collector</code> and <code>btc-ws</code> should be run separately.
         In order to run them in one sbt CLI instance use these commands: <br />
         <code>; project btc-ws; run 9000</code><br />

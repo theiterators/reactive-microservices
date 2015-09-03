@@ -1,3 +1,5 @@
+CREATE DATABASE auth_password;
+\connect auth_password;
 CREATE TABLE "auth_entry"(
   id SERIAL PRIMARY KEY,
   identity_id BIGINT NOT NULL,
