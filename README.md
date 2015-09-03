@@ -30,38 +30,23 @@ They uses different communication methods, different databases, and different fr
 
 #### Review the configuration files
 
-Take some time to review `application.conf` files that are located in ```resource``` subdirectory of each microservice.
+Take some time to review `application.conf` files that are located in ```resource``` subdirectory of each microservice. You can also look at `docker-compose.yml` file, which contains docker preconfigurated images for all the required databases.
 
-#### Create and configure Postgres databases
+#### Run migrations (You don't need to do this step if you want to use our docker container)
 
-The default names of the DBs that need to be created are: ```auth_codecard```, ```auth_password```, and ```identity_manager```. If you want to use non-default names please tweak the `application.conf` files.
-
-Scripts for quick setup:
-```
-createdb auth_codecard -U postgres
-```
-```
-createdb auth_password -U postgres
-```
-```
-createdb identity_manager -U postgres
-```
-
-#### Run migrations
-
-For `auth-codecard`, `identity-manager` and `auth-password` you need to run the SQL migration scripts which are located in relevant `resources` directories.
-You can also tweak and use this script in your console
+For `auth-codecard`, `identity-manager` and `auth-password` you need to run the SQL migration scripts which are located in `postgres` directory. If you want to use non-default names please tweak the `application.conf` files.
+You can also tweak and use this script in your console.
 
 ```
 cd /where/this/activator/template/is/located/
-psql auth_codecard -U postgres -f ./auth-codecard/src/main/resources/init.sql &&
-psql auth_password -U postgres -f ./auth-password/src/main/resources/auth_entry.sql &&
-psql identity_manager -U postgres -f ./identity-manager/src/main/resources/identity.sql
+psql -h localhost -U postgres -f ./postgres/init.sql &&
+psql -h localhost -U postgres -f ./postgres/auth_entry.sql &&
+psql -h localhost -U postgres -f ./postgres/identity.sql
 ```
 
 ## Running
 
-Before starting anything make sure you have PostgreSQL, MongoDB and Redis up and running.
+Run `docker-compose up` in project main directory to launch databases, or if you are using your own database instances, make sure you have PostgreSQL, MongoDB and Redis up and running.
 
 #### akka-http
 You can run each service separately, but we also we provided a SBT task called `runAll`.
