@@ -1,3 +1,5 @@
+CREATE DATABASE auth_codecard;
+\connect auth_codecard;
 CREATE TABLE "auth_entry"(
   user_identifier CHAR(10) PRIMARY KEY,
   identity_id BIGINT NOT NULL,
