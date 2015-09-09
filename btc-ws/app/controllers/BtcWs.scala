@@ -70,6 +70,7 @@ case class Token(value: String, validTo: Long, identityId: Long, authMethods: Se
 
 object BtcWs extends Controller with Formats {
   def index(authToken: String) = WebSocket.tryAcceptWithActor[Command, MarketEvent] { implicit request =>
+    println(s"http://$tokenManagerHost:$tokenManagerPort/tokens/$authToken")
     tokenManagerUrl(authToken).get().map { response =>
       if (response.status == OK) {
         val token = Json.parse(response.body).as[Token]

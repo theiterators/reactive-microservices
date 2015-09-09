@@ -32,6 +32,8 @@ lazy val `btc-ws` = (project in file("btc-ws")).dependsOn(btcCommon).enablePlugi
 
 lazy val `btc-users` = (project in file("btc-users")).dependsOn(btcCommon)
 
+lazy val frontend = project in file("frontend")
+
 val runAll = inputKey[Unit]("Runs all subprojects")
 
 runAll := {
