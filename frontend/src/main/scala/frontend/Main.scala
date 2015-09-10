@@ -1,4 +1,4 @@
-package tutorial.webapp
+package frontend
 
 import org.scalajs.dom.raw.{Event, MessageEvent, WebSocket}
 import org.scalajs.jquery.{JQueryXHR, JQueryAjaxSettings, jQuery}
@@ -6,20 +6,41 @@ import upickle.default._
 import scala.scalajs.js
 import js.JSApp
 import js.Dynamic.literal
+import scalatags.Text.all._
 
 case class Credentials(email: String, password: String)
+
 case class Message(operation: String, id: Int, value: Double)
+
 case class Token(value: String)
 
-object TutorialApp extends JSApp {
+object Main extends JSApp {
 
   def main(): Unit = {
     jQuery(setupUI _)
   }
 
   def setupUI(): Unit = {
+    jQuery("body").append(Page.loginRegisterForm)
+    jQuery("body").append(Page.marketInfoTable)
     jQuery("#register-submit").click(register _)
     jQuery("#login-submit").click(login _)
+    jQuery("#login-form-link").click(activeLoginForm _)
+    jQuery("#register-form-link").click(activeRegisterForm _)
+  }
+
+  def activeLoginForm(): Unit = {
+    jQuery("#login-form").delay(100).fadeIn(100)
+    jQuery("#register-form").fadeOut(100)
+    jQuery("#register-form-link").removeClass("active")
+    jQuery("#login-form").addClass("active")
+  }
+
+  def activeRegisterForm(): Unit = {
+    jQuery("#register-form").delay(100).fadeIn(100)
+    jQuery("#login-form").fadeOut(100)
+    jQuery("#login-form-link").removeClass("active")
+    jQuery("#register-form").addClass("active")
   }
 
   def register(): Unit = {
@@ -54,14 +75,14 @@ object TutorialApp extends JSApp {
         val ws = new WebSocket(url = s"ws://localhost:9000/btc/${token.value}")
         ws.onmessage = { m: MessageEvent =>
           val message = read[Message](m.data.toString)
-          println(message)
           jQuery("#message-log").append(
-            s"""<tr>
-              <td>${message.operation}</td>
-              <td>${message.id}</td>
-              <td>${message.value}</td>
-            </tr>"""
-          )}
+            tr(
+              td(message.operation),
+              td(message.id),
+              td(message.value)
+            ).toString
+          )
+        }
         ws.onopen = { e: Event => ws.send("{\"id\":1,\"operation\":\"SubscribeRateChange\"}") }
       }
     ).asInstanceOf[JQueryAjaxSettings])
