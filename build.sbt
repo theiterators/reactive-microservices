@@ -147,6 +147,8 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.7"
 )
 
+resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
+
 val akkaV = "2.3.10"
 val playV = "2.3.8"
 val akkaStreamV = "1.0-RC2"
