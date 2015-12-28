@@ -148,6 +148,7 @@ lazy val commonSettings = Seq(
 )
 
 resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
+resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
 
 val akkaV = "2.3.10"
 val playV = "2.3.8"
