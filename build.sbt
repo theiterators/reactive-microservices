@@ -144,11 +144,10 @@ lazy val `btc-users` = (project in file("btc-users")).dependsOn(btcCommon).setti
 
 lazy val commonSettings = Seq(
   scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
-  scalaVersion := "2.11.7"
+  scalaVersion := "2.11.7",
+  resolvers ++= Seq("rediscala" at "http://dl.bintray.com/etaty/maven",
+    "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/")
 )
-
-resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
-resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
 
 val akkaV = "2.3.10"
 val playV = "2.3.8"
