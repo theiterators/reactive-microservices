@@ -18,7 +18,7 @@ class DataFetcher(broadcaster: ActorRef) extends Actor with ActorLogging {
 
   private implicit val tickerFormat = Json.format[Ticker]
   private implicit val dispatcher = context.dispatcher
-  private val url = "https://market.bitbay.pl/API/Public/BTCUSD/ticker.json"
+  private val url = "https://bitbay.net/API/Public/BTCUSD/ticker.json"
   private val client = new NingWSClient(new Builder().build())
 }
 
