@@ -176,6 +176,8 @@ val jbcrypt = "org.mindrot" % "jbcrypt" % jbcryptV
 val rediscala = "com.etaty.rediscala" %% "rediscala" % rediscalaV
 val restfb = "com.restfb" % "restfb" % restFbV
 
+lazy val frontend = project in file("frontend")
+
 val runAll = inputKey[Unit]("Runs all subprojects")
 
 runAll := {
